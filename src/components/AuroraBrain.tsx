@@ -20,16 +20,28 @@ export function AuroraBrain() {
   const eyeRef = useRef<SVGCircleElement>(null);
 
   useEffect(() => {
-    const stage = stageRef.current;
-    const svg = svgRef.current;
-    const back = backRef.current;
-    const front = frontRef.current;
-    const overlays = overlaysRef.current;
-    const tendrilsG = tendrilsRef.current;
-    const pb = particlesBackRef.current;
-    const pf = particlesFrontRef.current;
-    const eye = eyeRef.current;
-    if (!stage || !svg || !back || !front || !overlays || !tendrilsG || !pb || !pf || !eye) return;
+    if (
+      !stageRef.current ||
+      !svgRef.current ||
+      !backRef.current ||
+      !frontRef.current ||
+      !overlaysRef.current ||
+      !tendrilsRef.current ||
+      !particlesBackRef.current ||
+      !particlesFrontRef.current ||
+      !eyeRef.current
+    )
+      return;
+    // After the guard above, every .current is non-null. Use ! so TS trusts us inside nested closures.
+    const stage: HTMLDivElement = stageRef.current!;
+    const svg: SVGSVGElement = svgRef.current!;
+    const back: SVGGElement = backRef.current!;
+    const front: SVGGElement = frontRef.current!;
+    const overlays: SVGGElement = overlaysRef.current!;
+    const tendrilsG: SVGGElement = tendrilsRef.current!;
+    const pb: HTMLDivElement = particlesBackRef.current!;
+    const pf: HTMLDivElement = particlesFrontRef.current!;
+    const eye: SVGCircleElement = eyeRef.current!;
 
     const ns = "http://www.w3.org/2000/svg";
     const CX = 300;
