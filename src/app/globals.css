@@ -1,0 +1,213 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #02040f;
+  --text: rgba(232, 240, 250, 0.96);
+  --text-soft: rgba(180, 210, 255, 0.55);
+}
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(180, 210, 255, 0.15); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(180, 210, 255, 0.3); }
+::selection { background: rgba(180, 215, 255, 0.25); color: white; }
+
+/* ============================================ */
+/* Aurora-alive brain background — v4 ported    */
+/* ============================================ */
+
+.aurora-stage {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(135deg, #02040f 0%, #080820 25%, #150e28 50%, #0a0e22 75%, #02040f 100%);
+  background-size: 200% 200%;
+  animation: aurora-bg 55s ease infinite;
+  z-index: 0;
+  overflow: hidden;
+}
+
+@keyframes aurora-bg {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.aurora-haze {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 30% 40%, rgba(70, 100, 160, 0.22) 0%, transparent 65%),
+    radial-gradient(ellipse 70% 80% at 70% 55%, rgba(110, 80, 150, 0.18) 0%, transparent 60%);
+  animation: aurora-haze 38s ease-in-out infinite;
+  mix-blend-mode: screen;
+}
+
+@keyframes aurora-haze {
+  0%, 100% { opacity: 0.9; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.08); }
+}
+
+.aurora-halo {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 680px;
+  height: 520px;
+  transform: translate(-50%, -52%);
+  background: radial-gradient(ellipse 50% 60% at 50% 50%, rgba(150, 180, 230, 0.18) 0%, rgba(120, 150, 210, 0.08) 35%, transparent 70%);
+  animation: aurora-halo 9s ease-in-out infinite;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+
+@keyframes aurora-halo {
+  0%, 100% { opacity: 0.7; transform: translate(-50%, -52%) scale(1); }
+  50% { opacity: 1; transform: translate(-50%, -52%) scale(1.04); }
+}
+
+.aurora-grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.03;
+  pointer-events: none;
+  background-image: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.5) 0.5px, transparent 1px);
+  background-size: 3px 3px;
+}
+
+.aurora-particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.ab-p {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(200, 220, 255, 0.6);
+  box-shadow: 0 0 3px rgba(180, 210, 255, 0.5);
+  animation: ab-drift linear infinite;
+}
+.ab-p-back { width: 1px; height: 1px; opacity: 0.4; }
+.ab-p-front { width: 2px; height: 2px; opacity: 0.85; }
+
+@keyframes ab-drift {
+  0% { opacity: 0; transform: translate(0, 0); }
+  15% { opacity: var(--op, 0.7); }
+  85% { opacity: var(--op, 0.7); }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)); }
+}
+
+.aurora-brain {
+  position: absolute;
+  top: 48%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  animation: aurora-breathe 6.5s ease-in-out infinite;
+}
+
+@keyframes aurora-breathe {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50% { transform: translate(-50%, -50%) scale(1.022); }
+}
+
+.aurora-twitch {
+  animation: aurora-twitch 11s ease-in-out infinite;
+  transform-origin: center;
+}
+
+@keyframes aurora-twitch {
+  0%, 92%, 100% { transform: translate(0, 0) rotate(0); }
+  93% { transform: translate(-0.5px, 0.3px) rotate(0.18deg); }
+  95% { transform: translate(0.4px, -0.4px) rotate(-0.12deg); }
+  97% { transform: translate(0, 0.2px) rotate(0.06deg); }
+}
+
+.ab-node-back {
+  fill: rgba(150, 180, 220, 0.35);
+  transition: fill 0.5s ease, opacity 0.5s ease;
+}
+
+.ab-node {
+  fill: rgba(195, 220, 245, 0.55);
+  transition: fill 0.4s ease, opacity 0.4s ease, filter 0.4s ease;
+}
+
+.ab-node.bright {
+  fill: rgba(245, 250, 255, 0.98);
+  filter: drop-shadow(0 0 8px rgba(180, 215, 255, 0.85));
+}
+
+.ab-conn {
+  stroke: rgba(140, 180, 220, 0.07);
+  stroke-width: 0.5;
+  transition: stroke 0.5s ease, stroke-width 0.5s ease, filter 0.5s ease;
+}
+
+.ab-conn.fire {
+  stroke: rgba(210, 230, 255, 0.95);
+  stroke-width: 1.5;
+  filter: drop-shadow(0 0 4px rgba(180, 210, 255, 0.9));
+}
+
+.ab-conn.fire-warm {
+  stroke: rgba(255, 225, 195, 0.88);
+  stroke-width: 1.5;
+  filter: drop-shadow(0 0 4px rgba(255, 210, 170, 0.85));
+}
+
+.ab-tendril {
+  stroke: rgba(170, 200, 245, 0.45);
+  stroke-width: 0.7;
+  fill: none;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 3px rgba(160, 200, 255, 0.5));
+}
+
+.ab-pulse-wave {
+  fill: none;
+  stroke: rgba(180, 210, 255, 0.45);
+  stroke-width: 1;
+  opacity: 0;
+  animation: ab-pulse 9s ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes ab-pulse {
+  0% { r: 10; opacity: 0.6; stroke-width: 1.6; }
+  100% { r: 280; opacity: 0; stroke-width: 0.2; }
+}
+
+.ab-waveform {
+  stroke: rgba(190, 220, 255, 0.55);
+  stroke-width: 1.2;
+  fill: none;
+  stroke-linecap: round;
+  opacity: 0;
+  animation: ab-wave 4s ease-out forwards;
+  filter: drop-shadow(0 0 4px rgba(180, 210, 255, 0.7));
+  pointer-events: none;
+}
+
+@keyframes ab-wave {
+  0% { opacity: 0; stroke-width: 0.4; }
+  30% { opacity: 0.85; stroke-width: 1.6; }
+  100% { opacity: 0; stroke-width: 0.2; }
+}
+
+.aurora-eye-core {
+  fill: rgba(250, 253, 255, 0.95);
+  filter: drop-shadow(0 0 14px rgba(210, 230, 255, 0.95));
+}
