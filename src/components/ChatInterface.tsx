@@ -173,6 +173,9 @@ export function ChatInterface() {
       pauseMs: 0,
     };
 
+    // Tell the brain Silas has started thinking (drives THINKING mode).
+    window.dispatchEvent(new CustomEvent("silas:thinking", { detail: { active: true } }));
+
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
@@ -204,9 +207,14 @@ export function ChatInterface() {
               if (revealRef.current?.msgId === myId) {
                 revealRef.current.target += evt.text;
               }
+              // Pulse the brain in time with each token Silas emits.
+              window.dispatchEvent(new CustomEvent("silas:token"));
             } else if (evt.type === "done") {
               if (evt.conversationId) setConversationId(evt.conversationId);
               // Don't dump the rest — let the buffer finish revealing first.
+              window.dispatchEvent(
+                new CustomEvent("silas:thinking", { detail: { active: false } })
+              );
             } else if (evt.type === "error") {
               if (revealRef.current?.msgId === myId) {
                 revealRef.current.target += `\n\n[error: ${evt.message}]`;
@@ -225,7 +233,14 @@ export function ChatInterface() {
           ? `\n\n[error: ${String(err)}]`
           : `[error: ${String(err)}]`;
       }
+      window.dispatchEvent(
+        new CustomEvent("silas:thinking", { detail: { active: false } })
+      );
     } finally {
+      // Safety net: whatever path we took, make sure the brain settles back down.
+      window.dispatchEvent(
+        new CustomEvent("silas:thinking", { detail: { active: false } })
+      );
       // Mark the stream finished. The reveal loop will type out whatever's left
       // in the buffer and then flip the message to not-pending (and re-enable
       // input) once it has fully caught up.
