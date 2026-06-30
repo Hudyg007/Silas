@@ -11,30 +11,32 @@ type Message = {
   pending?: boolean;
 };
 
-/* ------------------------------------------------------------------ *
- * Typewriter reveal tunables
- * ------------------------------------------------------------------ *
- * The network and the screen are decoupled: deltas land in a TARGET
- * buffer, and a steady loop drips characters from that buffer into the
- * DISPLAYED text so Silas appears to type.
- *
- * To make Silas type FASTER or SLOWER, change BASE_CPS (characters per
- * second). Everything else only shapes the feel.
- */
-const BASE_CPS = 45; // base typing speed (characters/second) — raise to speed up, lower to slow down
-const TICK_MS = 20; // reveal loop tick interval (ms)
+// ---------------------------------------------------------------------------
+// Typewriter tuning constants — adjust these to change how Silas "types".
+//
+//   TO MAKE HIM TYPE FASTER OR SLOWER: change BASE_CPS (characters per second).
+//   Higher = faster, lower = slower. Everything else is feel/polish.
+// ---------------------------------------------------------------------------
+const BASE_CPS = 45; // base typing speed, characters revealed per second
+const TICK_MS = 20; // how often the reveal loop runs (ms); 16–30ms is smooth
 const SENTENCE_PAUSE_MS = 250; // extra pause after . ? !
 const NEWLINE_PAUSE_MS = 180; // extra pause after a newline
-const COMMA_PAUSE_MS = 80; // extra pause after a comma
-const MAX_BACKLOG = 120; // chars the buffer may get ahead before we speed up to catch up
+const COMMA_PAUSE_MS = 80; // short pause after a comma
+const MAX_BACKLOG = 120; // if displayed text lags this many chars behind the
+//                          network buffer, speed up to catch back up
+const CATCHUP_SECONDS = 1.2; // when catching up, drain the backlog within ~this
+//                              window so we never lag more than a second or two
 
-// How long to pause after revealing a given character (ms). 0 = no pause.
-function pauseForChar(ch: string): number {
-  if (ch === "." || ch === "?" || ch === "!") return SENTENCE_PAUSE_MS;
-  if (ch === "\n") return NEWLINE_PAUSE_MS;
-  if (ch === ",") return COMMA_PAUSE_MS;
-  return 0;
-}
+// Per-message reveal state. The network fills `target`; the reveal loop walks
+// `shown` toward `target.length`, pushing the revealed slice into the message.
+type Reveal = {
+  msgId: string;
+  target: string; // full text received from the network so far
+  shown: number; // number of characters currently displayed
+  streamEnded: boolean; // true once "done"/"error"/catch fired — drain, then finalize
+  frac: number; // fractional-character accumulator between ticks
+  pauseMs: number; // remaining "thinking" pause before the next reveal
+};
 
 export function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -44,14 +46,9 @@ export function ChatInterface() {
   const [showOnboarding, setShowOnboarding] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // --- Typewriter state (refs so the reveal loop doesn't re-render on every tick) ---
-  const targetRef = useRef(""); // full text received from the network so far
-  const displayedRef = useRef(""); // text currently shown on screen
-  const carryRef = useRef(0); // fractional characters carried between ticks
-  const pauseTicksRef = useRef(0); // remaining ticks to wait for a natural pause
-  const streamDoneRef = useRef(false); // network finished (done/error/closed)
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const assistantIdRef = useRef<string>(""); // id of the message being revealed
+  // The single active reveal (null when nothing is typing). A long-lived
+  // interval reads this each tick, so there's only ever one timer to clean up.
+  const revealRef = useRef<Reveal | null>(null);
 
   useEffect(() => {
     fetch("/api/onboarding")
@@ -75,116 +72,106 @@ export function ChatInterface() {
     }
   }, [messages]);
 
-  // Clean up the reveal timer if the component unmounts mid-type.
+  // Steady reveal loop: moves characters from the target buffer into the
+  // displayed message a few at a time, with adaptive speed and natural pauses.
   useEffect(() => {
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, []);
+    const interval = setInterval(() => {
+      const st = revealRef.current;
+      if (!st) return;
 
-  // Stop the current reveal loop and snap the in-progress message to its full
-  // text. Called when a new message starts so nothing is left half-typed.
-  function flushAndStopReveal() {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-    const prevId = assistantIdRef.current;
-    if (prevId) {
-      const full = targetRef.current;
-      setMessages((prev) =>
-        prev.map((m) => (m.id === prevId ? { ...m, content: full, pending: false } : m))
-      );
-    }
-  }
+      // Honor any "thinking" pause first.
+      if (st.pauseMs > 0) {
+        st.pauseMs = Math.max(0, st.pauseMs - TICK_MS);
+        return;
+      }
 
-  // Start the steady reveal loop for the given assistant message id.
-  function startReveal(id: string) {
-    if (intervalRef.current) clearInterval(intervalRef.current);
+      const backlog = st.target.length - st.shown;
 
-    intervalRef.current = setInterval(() => {
-      const target = targetRef.current;
-      const displayed = displayedRef.current;
-      const backlog = target.length - displayed.length;
-
-      // Nothing left to reveal.
+      // Caught up: if the stream is finished, finalize; otherwise just wait.
       if (backlog <= 0) {
-        // Only finish once the network has actually completed.
-        if (streamDoneRef.current) {
-          if (intervalRef.current) {
-            clearInterval(intervalRef.current);
-            intervalRef.current = null;
-          }
+        if (st.streamEnded) {
+          const id = st.msgId;
+          const finalContent = st.target;
+          revealRef.current = null;
           setMessages((prev) =>
-            prev.map((m) => (m.id === id ? { ...m, content: target, pending: false } : m))
+            prev.map((m) =>
+              m.id === id ? { ...m, content: finalContent, pending: false } : m
+            )
           );
+          setSending(false);
         }
         return;
       }
 
+      // Adaptive rate: stay calm when keeping up, speed up when far behind so
+      // the visible text never lags more than ~CATCHUP_SECONDS behind.
       const catchUp = backlog > MAX_BACKLOG;
+      const rate = catchUp
+        ? Math.max(BASE_CPS, backlog / CATCHUP_SECONDS)
+        : BASE_CPS;
 
-      // Honor natural pauses, but not while we're racing to catch up.
-      if (!catchUp && pauseTicksRef.current > 0) {
-        pauseTicksRef.current -= 1;
-        return;
-      }
+      st.frac += (rate * TICK_MS) / 1000;
+      const budget = Math.floor(st.frac);
+      if (budget < 1) return; // not enough accumulated for a full character yet
+      st.frac -= budget;
 
-      // Reveal rate: calm base speed, plus a boost proportional to how far the
-      // buffer has run ahead so we never lag more than a second or two.
-      let cps = BASE_CPS;
-      if (catchUp) cps += backlog - MAX_BACKLOG;
-
-      carryRef.current += (cps * TICK_MS) / 1000;
-      const n = Math.floor(carryRef.current);
-      if (n < 1) return;
-      carryRef.current -= n;
-
-      let next = displayed;
+      // Reveal up to `budget` characters, stopping early to insert a natural
+      // pause after punctuation. While catching up we skip pauses entirely.
       let revealed = 0;
-      while (revealed < n && next.length < target.length) {
-        const ch = target[next.length];
-        next += ch;
+      while (revealed < budget && st.shown < st.target.length) {
+        const ch = st.target[st.shown];
+        st.shown++;
         revealed++;
-        // When typing calmly, pause after sentence-ends / newlines / commas.
         if (!catchUp) {
-          const pause = pauseForChar(ch);
-          if (pause > 0) {
-            pauseTicksRef.current = Math.round(pause / TICK_MS);
+          if (ch === "." || ch === "?" || ch === "!") {
+            st.pauseMs = SENTENCE_PAUSE_MS;
+            break;
+          }
+          if (ch === "\n") {
+            st.pauseMs = NEWLINE_PAUSE_MS;
+            break;
+          }
+          if (ch === ",") {
+            st.pauseMs = COMMA_PAUSE_MS;
             break;
           }
         }
       }
 
-      if (next !== displayed) {
-        displayedRef.current = next;
+      if (revealed > 0) {
+        const id = st.msgId;
+        const shownText = st.target.slice(0, st.shown);
         setMessages((prev) =>
-          prev.map((m) => (m.id === id ? { ...m, content: next } : m))
+          prev.map((m) =>
+            m.id === id ? { ...m, content: shownText, pending: true } : m
+          )
         );
       }
     }, TICK_MS);
-  }
+
+    return () => clearInterval(interval);
+  }, []);
 
   async function send(text: string) {
     if (sending || !text.trim()) return;
     setSending(true);
     setShowOnboarding(false);
 
-    // Finish any previous reveal before starting a new one.
-    flushAndStopReveal();
-
     const userMsg: Message = { id: `u-${Date.now()}`, role: "user", content: text };
     const assistantMsg: Message = { id: `a-${Date.now()}`, role: "assistant", content: "", pending: true };
     setMessages((prev) => [...prev, userMsg, assistantMsg]);
 
-    // Reset typewriter buffers for this message and kick off the reveal loop.
-    targetRef.current = "";
-    displayedRef.current = "";
-    carryRef.current = 0;
-    pauseTicksRef.current = 0;
-    streamDoneRef.current = false;
-    assistantIdRef.current = assistantMsg.id;
-    startReveal(assistantMsg.id);
+    // Start a fresh reveal for this assistant message. Replacing the ref drops
+    // any previous reveal so nothing from an earlier message leaks in.
+    const myId = assistantMsg.id;
+    revealRef.current = {
+      msgId: myId,
+      target: "",
+      shown: 0,
+      streamEnded: false,
+      frac: 0,
+      pauseMs: 0,
+    };
 
     try {
       const res = await fetch("/api/chat", {
@@ -213,31 +200,38 @@ export function ChatInterface() {
           try {
             const evt = JSON.parse(line.slice(6));
             if (evt.type === "delta") {
-              // Feed the target buffer; the reveal loop shows it gradually.
-              targetRef.current += evt.text;
+              // Append to the target buffer; the reveal loop handles display.
+              if (revealRef.current?.msgId === myId) {
+                revealRef.current.target += evt.text;
+              }
             } else if (evt.type === "done") {
               if (evt.conversationId) setConversationId(evt.conversationId);
-              // Let the buffer drain, then the loop marks not-pending.
-              streamDoneRef.current = true;
+              // Don't dump the rest — let the buffer finish revealing first.
             } else if (evt.type === "error") {
-              targetRef.current += `\n\n[error: ${evt.message}]`;
-              streamDoneRef.current = true;
+              if (revealRef.current?.msgId === myId) {
+                revealRef.current.target += `\n\n[error: ${evt.message}]`;
+              }
             }
           } catch (e) {
             console.error("SSE parse error:", e, line);
           }
         }
       }
-
-      // Network fully read — let whatever is buffered finish typing out.
-      streamDoneRef.current = true;
     } catch (err) {
       console.error("send error:", err);
-      // Same as the error event: append, then let the buffer drain.
-      targetRef.current += `\n\n[error: ${String(err)}]`;
-      streamDoneRef.current = true;
+      // Same treatment as the error event: append, then let the buffer drain.
+      if (revealRef.current?.msgId === myId) {
+        revealRef.current.target += revealRef.current.target
+          ? `\n\n[error: ${String(err)}]`
+          : `[error: ${String(err)}]`;
+      }
     } finally {
-      setSending(false);
+      // Mark the stream finished. The reveal loop will type out whatever's left
+      // in the buffer and then flip the message to not-pending (and re-enable
+      // input) once it has fully caught up.
+      if (revealRef.current?.msgId === myId) {
+        revealRef.current.streamEnded = true;
+      }
     }
   }
 
