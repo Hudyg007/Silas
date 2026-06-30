@@ -63,7 +63,22 @@ export async function POST(req: NextRequest) {
       .order("created_at", { ascending: false })
       .limit(10);
 
-    const history = (historyData || []).reverse().filter((m) => m.role !== "system") as Array<{ role: "user" | "assistant"; content: string }>;
+    const history = (historyData || [])
+      .reverse()
+      .filter((m) => m.role !== "system")
+      // Drop messages with null/empty/whitespace-only content — a single blank
+      // row otherwise triggers Anthropic 400 "user messages must have non-empty
+      // content" for the whole conversation.
+      .filter((m) => typeof m.content === "string" && m.content.trim().length > 0) as Array<{
+      role: "user" | "assistant";
+      content: string;
+    }>;
+
+    // The API requires the sequence to start with a user turn. If filtering left
+    // a leading assistant message, drop assistant messages until the first user one.
+    while (history.length > 0 && history[0].role !== "user") {
+      history.shift();
+    }
 
     // Parallel RAG retrieval
     const [notes, pastMessages] = await Promise.all([
@@ -129,19 +144,22 @@ export async function POST(req: NextRequest) {
             // Loop again so Silas can respond to the tool result in the same reply.
           }
 
-          // Save assistant message with embedding (skip embedding if the turn
-          // produced no text — e.g. a tool-only round — to avoid an empty embed).
-          const assistantEmbedding = fullText.trim().length > 0 ? await embed(fullText) : null;
-          await admin.from("messages").insert({
-            conversation_id: conversationId,
-            role: "assistant",
-            content: fullText,
-            embedding: assistantEmbedding as unknown as string,
-            metadata: {
-              retrieved_note_count: notes.length,
-              retrieved_past_message_count: pastMessages.length,
-            },
-          });
+          // Save assistant message — but skip the insert entirely when the turn
+          // produced no text (e.g. a tool-only round) so we never write empty
+          // assistant rows that would break later API calls in this conversation.
+          if (fullText.trim().length > 0) {
+            const assistantEmbedding = await embed(fullText);
+            await admin.from("messages").insert({
+              conversation_id: conversationId,
+              role: "assistant",
+              content: fullText,
+              embedding: assistantEmbedding as unknown as string,
+              metadata: {
+                retrieved_note_count: notes.length,
+                retrieved_past_message_count: pastMessages.length,
+              },
+            });
+          }
 
           await admin
             .from("conversations")
