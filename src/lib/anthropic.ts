@@ -12,19 +12,25 @@ export const CHAT_MODEL = process.env.ANTHROPIC_CHAT_MODEL || "claude-sonnet-4-6
 export const CHEAP_MODEL = process.env.ANTHROPIC_CHEAP_MODEL || "claude-haiku-4-5-20251001";
 
 /**
- * Stream a chat response. Returns an AsyncIterable of text deltas.
+ * Stream a chat response. Returns a MessageStream you can iterate for text
+ * deltas and await `.finalMessage()` for the assembled result (incl. tool_use).
+ *
+ * `messages` accepts full Anthropic message params so tool_use/tool_result
+ * blocks can be threaded back in across an agentic turn.
  */
 export async function streamChat(params: {
   systemPrompt: string;
-  messages: Array<{ role: "user" | "assistant"; content: string }>;
+  messages: Anthropic.MessageParam[];
   model?: string;
   maxTokens?: number;
+  tools?: Anthropic.Tool[];
 }) {
   const stream = anthropic.messages.stream({
     model: params.model || CHAT_MODEL,
     max_tokens: params.maxTokens || 2048,
     system: params.systemPrompt,
     messages: params.messages,
+    ...(params.tools && params.tools.length > 0 ? { tools: params.tools } : {}),
   });
   return stream;
 }

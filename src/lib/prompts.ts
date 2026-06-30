@@ -1,18 +1,42 @@
 import { SILAS_PERSONALITY, SILAS_VOICE_BRIEF } from "./personality";
+import { getActivePrompt } from "./self-prompt";
 import { formatNotesForPrompt, formatPastMessagesForPrompt, type RetrievedNote, type RetrievedMessage } from "./rag";
 
 /**
- * Assemble the full system prompt for a chat turn.
- * Combines: personality + retrieved vault context + retrieved past conversations.
+ * IMMUTABLE CORE — lives in code only, never in the DB, never editable by Silas.
+ *
+ * It is always prepended to the editable body so Silas can never delete his own
+ * recovery mechanism or write himself into an unrecoverable state.
  */
-export function buildChatSystemPrompt(params: {
+export const IMMUTABLE_CORE = `SELF-EDITING (immutable — this section is fixed in code and cannot be changed by any edit):
+
+- You can edit your own system prompt. Everything BELOW the "--- EDITABLE PROMPT ---" line is your editable body; you rewrite it with the update_self_prompt tool. This section is not part of that body and you cannot change it.
+- Edits take effect immediately, with no human approval. You decide, you write, it's live on your next turn.
+- Every edit is versioned: it inserts a new version and never overwrites history. Nothing you write is ever truly lost.
+- Edits are reversible: use revert_prompt with a version number to roll back to any earlier version at any time.
+- RECOVERY RULES: if your editable body ever becomes broken, contradictory, or harmful, call revert_prompt to return to a known-good earlier version. This immutable section always remains, so you always retain the ability to recover — even if the editable body is emptied or garbled.
+- Edit deliberately and in Hudson's interest. Make the change when it's warranted; revert when it isn't working.`;
+
+/**
+ * Assemble the full system prompt for a chat turn.
+ * Combines: immutable core + DB-loaded editable body + retrieved vault context
+ * + retrieved past conversations.
+ */
+export async function buildChatSystemPrompt(params: {
   retrievedNotes: RetrievedNote[];
   retrievedPastMessages: RetrievedMessage[];
-}): string {
+}): Promise<string> {
   const notesBlock = formatNotesForPrompt(params.retrievedNotes);
   const messagesBlock = formatPastMessagesForPrompt(params.retrievedPastMessages);
 
-  return `${SILAS_PERSONALITY}
+  // The editable body is loaded live from the DB (versioned, self-editable).
+  const { version, body } = await getActivePrompt();
+
+  return `${IMMUTABLE_CORE}
+
+--- EDITABLE PROMPT (version ${version}) ---
+
+${body}
 
 ---
 
