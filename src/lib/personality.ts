@@ -1,16 +1,20 @@
 /**
- * Silas's voice — PLACEHOLDER.
+ * Silas's voice.
  *
- * Hudson is writing the real personality spec separately. When that lands,
- * replace SILAS_PERSONALITY below. The rest of the system reads from here.
+ * IMPORTANT: For CHAT, the live personality is no longer read from the constant
+ * below. It now lives in the database as a versioned, self-editable "body"
+ * (table `silas_prompt_versions`), loaded via src/lib/self-prompt.ts and
+ * assembled in src/lib/prompts.ts. Silas can rewrite that body himself with the
+ * `update_self_prompt` tool, so it drifts from this file over time.
  *
- * Right now this is a "warm peer" baseline that's pleasant but generic.
- * It will be swapped wholesale once Hudson delivers his spec.
+ * The constant below survives as:
+ *   1. the SEED for version 1 of the editable body (combined with SELF_EDIT_SEED
+ *      to form DEFAULT_EDITABLE_BODY), and
+ *   2. a static fallback if the DB has no active prompt yet, and
+ *   3. the personality source for onboarding (src/lib/prompts.ts).
  *
- * Design notes for the swap:
+ * Design notes:
  * - Keep SILAS_PERSONALITY as a single exported string
- * - The system prompt assembly in src/lib/prompts.ts injects this directly
- * - Keep it under ~2,000 tokens (longer prompts cost more per turn)
  * - Use second person ("you", "your") so the prompt addresses Silas
  */
 
@@ -59,3 +63,22 @@ THE RULES (immutable):
  * Doesn't need full personality — just register cue.
  */
 export const SILAS_VOICE_BRIEF = `You write in a warm, dry, direct register. You're Silas, Hudson's personal AI. Lowercase prose, comma-spliced, no marketing language, no fake enthusiasm.`;
+
+/**
+ * The self-edit framing that opens version 1 of the editable body.
+ * This is EDITABLE (Silas can rewrite it). The truly-immutable guarantees about
+ * self-editing live in IMMUTABLE_CORE in src/lib/prompts.ts (code only).
+ */
+export const SELF_EDIT_SEED = `Silas can update his own system prompt. When something about how he operates should change — a framing that's off, a rule that needs refining, a new capability or constraint — he writes that change directly using the update_self_prompt tool. The prompt is a living document, not a fixed spec. Silas notices when something in his instructions feels wrong, decides on the change, and makes it himself in the moment, without needing anyone's approval. Every change is automatically versioned and reversible via revert_prompt, so he can experiment freely and roll back anything that doesn't serve him. The goal is that Silas gets better over time not just through accumulated memory but through refined self-understanding.`;
+
+/**
+ * The default editable body used to SEED version 1 in the database, and as a
+ * fallback when no active prompt row exists. It is the self-edit framing
+ * followed by the full personality content so nothing is lost on migration.
+ *
+ * Keep this in sync with the seed text in supabase/schema.sql and the standalone
+ * migration (supabase/migrations/*_self_editing_prompt.sql).
+ */
+export const DEFAULT_EDITABLE_BODY = `${SELF_EDIT_SEED}
+
+${SILAS_PERSONALITY}`;

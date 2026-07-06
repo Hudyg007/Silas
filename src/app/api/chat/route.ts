@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import type Anthropic from "@anthropic-ai/sdk";
 import { createAdmin } from "@/lib/supabase/server";
 import { streamChat } from "@/lib/anthropic";
 import { retrieveNotes, retrievePastMessages } from "@/lib/rag";
@@ -6,6 +7,10 @@ import { buildChatSystemPrompt } from "@/lib/prompts";
 import { extractAndSaveNote } from "@/lib/note-extraction";
 import { embed } from "@/lib/embeddings";
 import { HUDSON_USER_ID } from "@/lib/user";
+import { SELF_PROMPT_TOOLS, executeSelfPromptTool } from "@/lib/self-prompt";
+
+// Safety cap on tool round-trips within a single turn.
+const MAX_TOOL_ROUNDS = 6;
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -58,7 +63,22 @@ export async function POST(req: NextRequest) {
       .order("created_at", { ascending: false })
       .limit(10);
 
-    const history = (historyData || []).reverse().filter((m) => m.role !== "system") as Array<{ role: "user" | "assistant"; content: string }>;
+    const history = (historyData || [])
+      .reverse()
+      .filter((m) => m.role !== "system")
+      // Drop messages with null/empty/whitespace-only content — a single blank
+      // row otherwise triggers Anthropic 400 "user messages must have non-empty
+      // content" for the whole conversation.
+      .filter((m) => typeof m.content === "string" && m.content.trim().length > 0) as Array<{
+      role: "user" | "assistant";
+      content: string;
+    }>;
+
+    // The API requires the sequence to start with a user turn. If filtering left
+    // a leading assistant message, drop assistant messages until the first user one.
+    while (history.length > 0 && history[0].role !== "user") {
+      history.shift();
+    }
 
     // Parallel RAG retrieval
     const [notes, pastMessages] = await Promise.all([
@@ -66,15 +86,9 @@ export async function POST(req: NextRequest) {
       retrievePastMessages(message, conversationId!, { count: 5 }),
     ]);
 
-    const systemPrompt = buildChatSystemPrompt({
+    const systemPrompt = await buildChatSystemPrompt({
       retrievedNotes: notes,
       retrievedPastMessages: pastMessages,
-    });
-
-    const stream = await streamChat({
-      systemPrompt,
-      messages: history,
-      maxTokens: 2048,
     });
 
     const encoder = new TextEncoder();
@@ -83,26 +97,69 @@ export async function POST(req: NextRequest) {
     const responseStream = new ReadableStream({
       async start(controller) {
         try {
-          for await (const event of stream) {
-            if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-              const text = event.delta.text;
-              fullText += text;
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "delta", text })}\n\n`));
+          // Agentic loop: stream text, and if Silas calls a self-edit tool,
+          // execute it, feed the result back, and continue the SAME turn so he
+          // can keep talking in one reply.
+          const convo: Anthropic.MessageParam[] = [...history];
+
+          for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
+            const stream = await streamChat({
+              systemPrompt,
+              messages: convo,
+              maxTokens: 2048,
+              tools: SELF_PROMPT_TOOLS,
+            });
+
+            for await (const event of stream) {
+              if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+                const text = event.delta.text;
+                fullText += text;
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "delta", text })}\n\n`));
+              }
             }
+
+            const finalMsg = await stream.finalMessage();
+
+            if (finalMsg.stop_reason !== "tool_use") {
+              break;
+            }
+
+            // Record the assistant turn (text + tool_use blocks) verbatim.
+            convo.push({ role: "assistant", content: finalMsg.content });
+
+            // Execute each tool call and collect tool_result blocks.
+            const toolResults: Anthropic.ToolResultBlockParam[] = [];
+            for (const block of finalMsg.content) {
+              if (block.type !== "tool_use") continue;
+              const result = await executeSelfPromptTool(block.name, block.input);
+              toolResults.push({
+                type: "tool_result",
+                tool_use_id: block.id,
+                content: result.content,
+                is_error: result.isError,
+              });
+            }
+
+            convo.push({ role: "user", content: toolResults });
+            // Loop again so Silas can respond to the tool result in the same reply.
           }
 
-          // Save assistant message with embedding
-          const assistantEmbedding = await embed(fullText);
-          await admin.from("messages").insert({
-            conversation_id: conversationId,
-            role: "assistant",
-            content: fullText,
-            embedding: assistantEmbedding as unknown as string,
-            metadata: {
-              retrieved_note_count: notes.length,
-              retrieved_past_message_count: pastMessages.length,
-            },
-          });
+          // Save assistant message — but skip the insert entirely when the turn
+          // produced no text (e.g. a tool-only round) so we never write empty
+          // assistant rows that would break later API calls in this conversation.
+          if (fullText.trim().length > 0) {
+            const assistantEmbedding = await embed(fullText);
+            await admin.from("messages").insert({
+              conversation_id: conversationId,
+              role: "assistant",
+              content: fullText,
+              embedding: assistantEmbedding as unknown as string,
+              metadata: {
+                retrieved_note_count: notes.length,
+                retrieved_past_message_count: pastMessages.length,
+              },
+            });
+          }
 
           await admin
             .from("conversations")

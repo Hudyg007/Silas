@@ -2,16 +2,47 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================ */
+/* Stitch design tokens — "the mind". Single source of truth.   */
+/* ============================================================ */
 :root {
-  --bg: #02040f;
-  --text: rgba(232, 240, 250, 0.96);
-  --text-soft: rgba(180, 210, 255, 0.55);
+  /* Background */
+  --bg-base: #080A1E;
+  --bg-glow: #141C4A;
+  --bg: var(--bg-base); /* legacy alias */
+
+  /* Ice-blue accent */
+  --ice-bright: #4DE3FF; /* bright fills */
+  --ice-dim: #3DD8F4; /* dim */
+  --ice-tint: #CBF5FF; /* text tint */
+
+  /* Vital green — the live dot ONLY. Nowhere else. */
+  --vital-green: #33E07A;
+
+  /* Text */
+  --text: #EEF4FF;
+  --text-muted: #8B96BD;
+  --danger: #FFB4AB; /* destructive only */
+
+  /* Frosted-glass surfaces */
+  --surface-fill: rgba(255, 255, 255, 0.06);
+  --surface-fill-strong: rgba(255, 255, 255, 0.10);
+  --surface-border: rgba(255, 255, 255, 0.10);
+  --blur: 20px;
+
+  /* Radii */
+  --radius-bubble: 20px;
+
+  --text-soft: var(--text-muted); /* legacy alias */
 }
 
 html, body {
-  background: var(--bg);
+  background:
+    radial-gradient(ellipse 62% 48% at 50% 46%, var(--bg-glow) 0%, transparent 70%),
+    var(--bg-base);
+  background-attachment: fixed;
   color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif;
+  font-family: var(--font-hanken), -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   margin: 0;
   padding: 0;
@@ -21,15 +52,131 @@ html, body {
 
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(180, 210, 255, 0.15); border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(180, 210, 255, 0.3); }
-::selection { background: rgba(180, 215, 255, 0.25); color: white; }
+::-webkit-scrollbar-thumb { background: rgba(139, 150, 189, 0.20); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(139, 150, 189, 0.40); }
+::selection { background: rgba(77, 227, 255, 0.25); color: var(--text); }
+
+/* ============================================================ */
+/* Frosted-glass surface + chat components                      */
+/* ============================================================ */
+.silas-glass {
+  background: var(--surface-fill);
+  border: 1px solid var(--surface-border);
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
+}
+
+/* Header live dot — the ONLY use of vital green. */
+.silas-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: var(--vital-green);
+  box-shadow: 0 0 4px var(--vital-green);
+  animation: silas-live-pulse 2s ease-in-out infinite;
+  flex: none;
+}
+@keyframes silas-live-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+/* Uppercase mono name labels above each bubble. */
+.silas-label {
+  font-family: var(--font-jetbrains), ui-monospace, monospace;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+/* Small glowing ice-blue dot preceding the SILAS label. */
+.silas-name-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--ice-bright);
+  box-shadow: 0 0 8px var(--ice-bright);
+  display: inline-block;
+  flex: none;
+}
+
+/* Message bubbles — frosted glass, 20px radius. */
+.silas-bubble {
+  border-radius: var(--radius-bubble);
+  border: 1px solid var(--surface-border);
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
+}
+/* Hudson (user), right: translucent blue-tinted glass, faint ice border. */
+.silas-bubble-user {
+  background: rgba(77, 227, 255, 0.10);
+  border-color: rgba(77, 227, 255, 0.30);
+}
+/* Silas (assistant), left: near-transparent white glass. */
+.silas-bubble-silas {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.10);
+}
+/* Typing indicator — small empty Silas bubble. */
+.silas-bubble-typing {
+  min-width: 64px;
+  min-height: 44px;
+}
+
+/* Typewriter caret shown while Silas is revealing text. */
+.silas-caret {
+  display: inline-block;
+  width: 6px;
+  height: 15px;
+  margin-left: 2px;
+  background: var(--ice-tint);
+  vertical-align: text-bottom;
+  animation: silas-caret-blink 1s steps(2, start) infinite;
+}
+@keyframes silas-caret-blink {
+  0%, 50% { opacity: 1; }
+  50.01%, 100% { opacity: 0; }
+}
+
+/* Circular ice-blue send button with soft glow. */
+.silas-send {
+  background: var(--ice-bright);
+  color: #003745;
+  box-shadow: 0 0 15px 2px rgba(77, 227, 255, 0.35);
+}
+
+/* ============================================ */
+/* BrainCanvas — three.js thought-orb backdrop  */
+/* Full-viewport, behind the chat, non-interactive. Dark surface gradient */
+/* (Design System) sits under the alpha-transparent WebGL canvas.         */
+/* ============================================ */
+
+.brain-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 90% 70% at 50% 42%,
+    #16182e 0%,
+    #0b0d1e 55%,
+    #05060f 100%
+  );
+}
+.brain-canvas canvas {
+  display: block;
+}
 
 /* ============================================ */
 /* Aurora-alive brain background — v4 ported    */
 /* ============================================ */
 
 .aurora-stage {
+  /* --ab-glow is the master glow multiplier; AuroraBrain overrides it from its
+     GLOW tunable. Dial it here (or there) to push firing intensity globally. */
+  --ab-glow: 1;
   position: fixed;
   inset: 0;
   background: linear-gradient(135deg, #02040f 0%, #080820 25%, #150e28 50%, #0a0e22 75%, #02040f 100%);
@@ -146,26 +293,33 @@ html, body {
 }
 
 .ab-node.bright {
-  fill: rgba(245, 250, 255, 0.98);
-  filter: drop-shadow(0 0 8px rgba(180, 215, 255, 0.85));
+  fill: rgba(250, 253, 255, 1);
+  filter:
+    drop-shadow(0 0 calc(7px * var(--ab-glow, 1)) rgba(190, 222, 255, 0.95))
+    drop-shadow(0 0 calc(15px * var(--ab-glow, 1)) rgba(150, 200, 255, 0.75));
 }
 
 .ab-conn {
-  stroke: rgba(140, 180, 220, 0.07);
+  stroke: rgba(140, 180, 220, 0.08);
   stroke-width: 0.5;
   transition: stroke 0.5s ease, stroke-width 0.5s ease, filter 0.5s ease;
 }
 
 .ab-conn.fire {
-  stroke: rgba(210, 230, 255, 0.95);
-  stroke-width: 1.5;
-  filter: drop-shadow(0 0 4px rgba(180, 210, 255, 0.9));
+  stroke: rgba(225, 240, 255, 1);
+  stroke-width: 2;
+  filter:
+    drop-shadow(0 0 calc(5px * var(--ab-glow, 1)) rgba(190, 220, 255, 1))
+    drop-shadow(0 0 calc(11px * var(--ab-glow, 1)) rgba(150, 200, 255, 0.7));
 }
 
+/* "warm" = a traveling-thought highlight: hotter, brighter, more saturated. */
 .ab-conn.fire-warm {
-  stroke: rgba(255, 225, 195, 0.88);
-  stroke-width: 1.5;
-  filter: drop-shadow(0 0 4px rgba(255, 210, 170, 0.85));
+  stroke: rgba(255, 215, 165, 1);
+  stroke-width: 2.2;
+  filter:
+    drop-shadow(0 0 calc(6px * var(--ab-glow, 1)) rgba(255, 200, 150, 1))
+    drop-shadow(0 0 calc(13px * var(--ab-glow, 1)) rgba(255, 170, 110, 0.75));
 }
 
 .ab-tendril {
