@@ -178,3 +178,7 @@ npx ruflo@latest doctor --fix
 > by default; `--ttl 0` to disable, `daemon status --all` to audit running daemons).
 
 **Agent tool** handles execution (agents, files, code, git). **MCP tools** handle coordination (swarm, memory, hooks). **CLI** is the same via Bash.
+
+## Design source of truth
+
+All UI work must follow `/design/DESIGN.md` tokens and match `/design/screens/*.png`. The brain animation reference is `/design/reference/brain-three.html`. Green #33E07A appears ONLY in the header live dot.
