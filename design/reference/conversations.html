@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Silas | Conversations</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary-fixed": "#a5eeff",
+                    "surface-container-highest": "#313349",
+                    "error-container": "#93000a",
+                    "primary": "#cbf5ff",
+                    "on-secondary-container": "#004f24",
+                    "on-secondary-fixed": "#00210c",
+                    "outline": "#869397",
+                    "surface-tint": "#3dd8f4",
+                    "surface-container-lowest": "#0a0c20",
+                    "on-secondary": "#003919",
+                    "secondary-fixed-dim": "#36e27c",
+                    "background": "#101226",
+                    "secondary-fixed": "#61ff97",
+                    "on-error-container": "#ffdad6",
+                    "on-primary": "#00363f",
+                    "on-error": "#690005",
+                    "on-surface-variant": "#bbc9cd",
+                    "on-surface": "#e0e0fd",
+                    "surface-dim": "#101226",
+                    "tertiary-container": "#c8ceff",
+                    "surface-container-high": "#26283e",
+                    "on-primary-fixed-variant": "#004e5a",
+                    "inverse-on-surface": "#2d2f44",
+                    "inverse-primary": "#006877",
+                    "on-tertiary-fixed-variant": "#3c4373",
+                    "on-primary-fixed": "#001f25",
+                    "tertiary-fixed": "#dee0ff",
+                    "on-tertiary-container": "#4e5687",
+                    "secondary": "#3fe881",
+                    "on-tertiary-fixed": "#0e1745",
+                    "on-secondary-fixed-variant": "#005227",
+                    "on-background": "#e0e0fd",
+                    "surface-bright": "#36384e",
+                    "primary-container": "#4de3ff",
+                    "surface-variant": "#313349",
+                    "tertiary": "#ececff",
+                    "error": "#ffb4ab",
+                    "surface-container-low": "#181a2e",
+                    "tertiary-fixed-dim": "#bcc3fb",
+                    "outline-variant": "#3c494c",
+                    "surface": "#101226",
+                    "primary-fixed-dim": "#3dd8f4",
+                    "secondary-container": "#00cb68",
+                    "surface-container": "#1c1e33",
+                    "on-tertiary": "#252d5b",
+                    "on-primary-container": "#006371",
+                    "inverse-surface": "#e0e0fd"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "bubble-padding-y": "12px",
+                    "bubble-padding-x": "16px",
+                    "section-margin": "32px",
+                    "container-padding": "20px",
+                    "element-gap": "12px"
+            },
+            "fontFamily": {
+                    "body-lg": ["Hanken Grotesk"],
+                    "body-lg-mobile": ["Hanken Grotesk"],
+                    "body-sm": ["Hanken Grotesk"],
+                    "headline-md": ["Hanken Grotesk"],
+                    "display-time": ["JetBrains Mono"],
+                    "label-caps": ["JetBrains Mono"],
+                    "headline-lg": ["Hanken Grotesk"]
+            },
+            "fontSize": {
+                    "body-lg": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "body-lg-mobile": ["16px", {"lineHeight": "22px", "fontWeight": "400"}],
+                    "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "500"}],
+                    "display-time": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "500"}],
+                    "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.1em", "fontWeight": "600"}],
+                    "headline-lg": ["28px", {"lineHeight": "34px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #101226;
+            color: #e0e0fd;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .evaporation-gradient {
+            mask-image: linear-gradient(to top, rgba(0,0,0,1) 40%, rgba(0,0,0,0.1) 100%);
+            -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,1) 40%, rgba(0,0,0,0.1) 100%);
+        }
+
+        .breath-glow {
+            animation: breath 4s ease-in-out infinite;
+        }
+
+        @keyframes breath {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.1); }
+        }
+
+        .pulse-soft {
+            animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse-soft {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .7; }
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="flex flex-col min-h-screen">
+<!-- Global Background Glow -->
+<div class="fixed inset-0 pointer-events-none z-0">
+<div class="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-primary/10 blur-[120px] rounded-full"></div>
+<div class="absolute bottom-[-20%] right-[-10%] w-[70%] h-[70%] bg-surface-container-highest/30 blur-[150px] rounded-full"></div>
+</div>
+<!-- Top Navigation Bar -->
+<header class="sticky top-0 z-50 pt-container-padding px-container-padding">
+<div class="glass-panel rounded-full h-14 flex items-center justify-between px-6 transition-opacity duration-500">
+<div class="flex items-center gap-4">
+<button class="hover:bg-white/5 p-2 rounded-full transition-colors flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">chevron_left</span>
+</button>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface tracking-tight">conversations</h1>
+</div>
+<div class="flex items-center">
+<span class="material-symbols-outlined text-on-surface-variant">schedule</span>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 relative z-10 px-container-padding pt-section-margin pb-32">
+<!-- Conversation List with Evaporation Effect -->
+<div class="flex flex-col gap-element-gap evaporation-gradient">
+<!-- Row 1 (Most Faded/Oldest/Top) -->
+<div class="glass-panel p-bubble-padding-x rounded-[24px] opacity-30 flex justify-between items-center group cursor-pointer transition-all duration-300 hover:bg-white/10">
+<div class="flex flex-col gap-1 overflow-hidden">
+<h3 class="font-headline-md text-headline-md text-on-surface truncate">Ethereal Musings</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant truncate">The logic of the void remains elusive today...</p>
+</div>
+<div class="flex flex-col items-end gap-2 shrink-0 ml-4">
+<span class="font-label-caps text-label-caps text-on-surface-variant/60">3d ago</span>
+</div>
+</div>
+<!-- Row 2 -->
+<div class="glass-panel p-bubble-padding-x rounded-[24px] opacity-60 flex justify-between items-center group cursor-pointer transition-all duration-300 hover:bg-white/10">
+<div class="flex flex-col gap-1 overflow-hidden">
+<h3 class="font-headline-md text-headline-md text-on-surface truncate">Environmental Analysis</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant truncate">Light patterns suggest a shift in the atmosphere.</p>
+</div>
+<div class="flex flex-col items-end gap-2 shrink-0 ml-4">
+<span class="font-label-caps text-label-caps text-on-surface-variant/60">1d ago</span>
+</div>
+</div>
+<!-- Row 3 (Focus/Middle) -->
+<div class="glass-panel p-bubble-padding-x rounded-[24px] opacity-90 flex justify-between items-center group cursor-pointer transition-all duration-300 hover:bg-white/10">
+<div class="flex flex-col gap-1 overflow-hidden">
+<h3 class="font-headline-md text-headline-md text-on-surface truncate">Quantum Feedback</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant truncate">I am processing the frequency of your last input.</p>
+</div>
+<div class="flex flex-col items-end gap-2 shrink-0 ml-4">
+<span class="font-label-caps text-label-caps text-on-surface-variant/60">5h ago</span>
+</div>
+</div>
+<!-- Row 4 (Recent/Active) -->
+<div class="glass-panel p-bubble-padding-x rounded-[24px] flex justify-between items-center group cursor-pointer transition-all duration-300 hover:bg-white/10 border-l-2 border-l-primary-container">
+<div class="flex flex-col gap-1 overflow-hidden">
+<div class="flex items-center gap-2">
+<h3 class="font-headline-md text-headline-md text-on-surface truncate">Atmospheric Inquiry</h3>
+<div class="w-2 h-2 rounded-full bg-secondary pulse-soft"></div>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface truncate">Does the indigo calm you as much as it calms me?</p>
+</div>
+<div class="flex flex-col items-end gap-2 shrink-0 ml-4">
+<span class="font-label-caps text-label-caps text-primary-container">2h ago</span>
+</div>
+</div>
+<!-- Row 5 (Most Recent) -->
+<div class="glass-panel p-bubble-padding-x rounded-[24px] flex justify-between items-center group cursor-pointer transition-all duration-300 hover:bg-white/10">
+<div class="flex flex-col gap-1 overflow-hidden">
+<h3 class="font-headline-md text-headline-md text-on-surface truncate">System Integrity</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant truncate">Pulse check completed. All rhythms are synchronized.</p>
+</div>
+<div class="flex flex-col items-end gap-2 shrink-0 ml-4">
+<span class="font-label-caps text-label-caps text-on-surface-variant/60">45m ago</span>
+</div>
+</div>
+<!-- Decorative Organic Element -->
+<div class="mt-section-margin flex justify-center opacity-40">
+<div class="w-16 h-[1px] bg-gradient-to-r from-transparent via-primary to-transparent"></div>
+</div>
+</div>
+</main>
+<!-- Floating Action Button -->
+<button class="fixed bottom-28 right-8 z-50 w-14 h-14 bg-primary-container text-on-primary-container rounded-full shadow-2xl shadow-primary-container/20 flex items-center justify-center scale-95 active:scale-90 transition-transform duration-300">
+<span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'wght' 400;">add</span>
+</button>
+<!-- Navigation Shell -->
+<nav class="fixed bottom-0 left-0 right-0 z-50 flex justify-around items-center px-container-padding py-3 glass-panel rounded-full mb-8 mx-5">
+<button class="text-on-surface-variant/60 p-3 hover:text-primary transition-colors scale-95 active:scale-90">
+<span class="material-symbols-outlined">bubble_chart</span>
+</button>
+<button class="bg-primary-container/20 text-primary-container rounded-full p-3 scale-95 active:scale-90 transition-transform">
+<span class="material-symbols-outlined">history</span>
+</button>
+<button class="text-on-surface-variant/60 p-3 hover:text-primary transition-colors scale-95 active:scale-90">
+<span class="material-symbols-outlined">tune</span>
+</button>
+<button class="text-on-surface-variant/60 p-3 hover:text-primary transition-colors scale-95 active:scale-90">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+</nav>
+<!-- Ambient Visualizer Overlay (Decorative) -->
+<div class="fixed bottom-0 left-0 right-0 h-32 pointer-events-none z-0 overflow-hidden">
+<div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-full h-full bg-gradient-to-t from-primary/5 to-transparent"></div>
+</div>
+<script>
+        // Micro-interaction for row clicks
+        document.querySelectorAll('.glass-panel.cursor-pointer').forEach(row => {
+            row.addEventListener('click', () => {
+                row.style.transform = 'scale(0.98)';
+                setTimeout(() => {
+                    row.style.transform = 'scale(1)';
+                }, 150);
+            });
+        });
+
+        // Dynamic header translucency based on scroll
+        window.addEventListener('scroll', () => {
+            const header = document.querySelector('header');
+            const scrollPos = window.scrollY;
+            if (scrollPos > 10) {
+                header.style.opacity = '0.9';
+            } else {
+                header.style.opacity = '1';
+            }
+        });
+    </script>
+</body></html>

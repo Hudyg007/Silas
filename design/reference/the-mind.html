@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Silas | The Mind</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #101226; /* Deep indigo-night */
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .ice-blue-glow {
+            box-shadow: 0 0 15px 2px rgba(77, 227, 255, 0.3);
+        }
+
+        .pulse-green {
+            animation: pulse-animation 2s infinite ease-in-out;
+        }
+
+        @keyframes pulse-animation {
+            0% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 rgba(51, 224, 122, 0.7); }
+            70% { opacity: 0.8; transform: scale(1.1); box-shadow: 0 0 0 6px rgba(51, 224, 122, 0); }
+            100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 rgba(51, 224, 122, 0); }
+        }
+
+        .typing-dot {
+            width: 4px;
+            height: 4px;
+            background: #4DE3FF;
+            border-radius: 50%;
+            display: inline-block;
+            animation: typing 1.4s infinite ease-in-out both;
+        }
+
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1.0); }
+        }
+
+        /* Fading gradient for chat messages */
+        .chat-mask {
+            mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-fixed": "#a5eeff",
+                        "surface-container-highest": "#313349",
+                        "error-container": "#93000a",
+                        "primary": "#cbf5ff",
+                        "on-secondary-container": "#004f24",
+                        "on-secondary-fixed": "#00210c",
+                        "outline": "#869397",
+                        "surface-tint": "#3dd8f4",
+                        "surface-container-lowest": "#0a0c20",
+                        "on-secondary": "#003919",
+                        "secondary-fixed-dim": "#36e27c",
+                        "background": "#101226",
+                        "secondary-fixed": "#61ff97",
+                        "on-error-container": "#ffdad6",
+                        "on-primary": "#00363f",
+                        "on-error": "#690005",
+                        "on-surface-variant": "#bbc9cd",
+                        "on-surface": "#e0e0fd",
+                        "surface-dim": "#101226",
+                        "tertiary-container": "#c8ceff",
+                        "surface-container-high": "#26283e",
+                        "on-primary-fixed-variant": "#004e5a",
+                        "inverse-on-surface": "#2d2f44",
+                        "inverse-primary": "#006877",
+                        "on-tertiary-fixed-variant": "#3c4373",
+                        "on-primary-fixed": "#001f25",
+                        "tertiary-fixed": "#dee0ff",
+                        "on-tertiary-container": "#4e5687",
+                        "secondary": "#3fe881",
+                        "on-tertiary-fixed": "#0e1745",
+                        "on-secondary-fixed-variant": "#005227",
+                        "on-background": "#e0e0fd",
+                        "surface-bright": "#36384e",
+                        "primary-container": "#4de3ff",
+                        "surface-variant": "#313349",
+                        "tertiary": "#ececff",
+                        "error": "#ffb4ab",
+                        "surface-container-low": "#181a2e",
+                        "tertiary-fixed-dim": "#bcc3fb",
+                        "outline-variant": "#3c494c",
+                        "surface": "#101226",
+                        "primary-fixed-dim": "#3dd8f4",
+                        "secondary-container": "#00cb68",
+                        "surface-container": "#1c1e33",
+                        "on-tertiary": "#252d5b",
+                        "on-primary-container": "#006371",
+                        "inverse-surface": "#e0e0fd"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "bubble-padding-y": "12px",
+                        "bubble-padding-x": "16px",
+                        "section-margin": "32px",
+                        "container-padding": "20px",
+                        "element-gap": "12px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Hanken Grotesk"],
+                        "body-lg-mobile": ["Hanken Grotesk"],
+                        "body-sm": ["Hanken Grotesk"],
+                        "headline-md": ["Hanken Grotesk"],
+                        "display-time": ["JetBrains Mono"],
+                        "label-caps": ["JetBrains Mono"],
+                        "headline-lg": ["Hanken Grotesk"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "body-lg-mobile": ["16px", {"lineHeight": "22px", "fontWeight": "400"}],
+                        "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "500"}],
+                        "display-time": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "500"}],
+                        "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.1em", "fontWeight": "600"}],
+                        "headline-lg": ["28px", {"lineHeight": "34px", "fontWeight": "600"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-surface text-on-surface font-body-lg-mobile overflow-hidden h-screen flex flex-col">
+<!-- Subtle Background Center Glow -->
+<div class="fixed inset-0 pointer-events-none flex items-center justify-center">
+<div class="w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px]"></div>
+</div>
+<!-- Header: Floating TopAppBar Shell -->
+<header class="fixed top-0 left-0 right-0 z-50 flex justify-between items-center px-bubble-padding-x py-bubble-padding-y rounded-full mt-4 mx-5 glass-panel border border-white/10 shadow-none">
+<div class="flex items-center gap-2">
+<span class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface tracking-tight">Silas</span>
+<div class="w-2 h-2 rounded-full bg-secondary pulse-green"></div>
+</div>
+<div class="flex flex-col items-end">
+<div class="font-display-time text-[14px] leading-tight text-primary-container tracking-widest uppercase" id="military-clock">18:42</div>
+<div class="font-label-caps text-[10px] text-on-surface-variant/60" id="current-date">07.06.2026</div>
+</div>
+</header>
+<!-- Main Content Area: Brain + Chat -->
+<main class="flex-grow relative flex flex-col pt-24 pb-32 overflow-hidden px-container-padding">
+<!-- Conversation Container (Middle Ground) -->
+<div class="flex-grow flex flex-col chat-mask relative">
+<!-- Three.js Brain Scene: Embedded in space -->
+<div class="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+<div class="w-full h-3/4 max-h-[500px]">
+<!-- STITCH_THREEJS_START:ANIMATION_2 class="w-full h-full opacity-80" -->
+<div class="w-full h-full opacity-80" style="display:block;">
+<script src="https://ajax.googleapis.com/ajax/libs/threejs/r125/three.min.js"></script>
+<div id="threejs-container-ANIMATION_2" style="width:100%;height:100%"></div>
+<script>
+(function() {
+  const container = document.getElementById('threejs-container-ANIMATION_2');
+  const devicePixelRatio = window.devicePixelRatio || 1;
+  const width = container.clientWidth || window.innerWidth;
+const height = container.clientHeight || window.innerHeight;
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+renderer.setSize(width, height);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+container.appendChild(renderer.domElement);
+
+// Colors from Design System
+const iceBlue = 0x4DE3FF;
+const softWhite = 0xEEF4FF;
+
+// Brain Parameters
+const dotCount = 700;
+const connectionDistance = 0.25;
+const brainGroup = new THREE.Group();
+scene.add(brainGroup);
+
+// Create dots in a brain silhouette (two ellipsoids with a central fissure)
+const dots = [];
+const dotGeometry = new THREE.SphereGeometry(0.008, 8, 8);
+
+for (let i = 0; i < dotCount; i++) {
+    const isLeft = Math.random() > 0.5;
+    const xOffset = isLeft ? -0.3 : 0.3;
+    
+    // Silhouette shaping
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.acos(2 * Math.random() - 1);
+    const r = Math.pow(Math.random(), 0.5) * 0.8;
+    
+    let x = r * Math.sin(phi) * Math.cos(theta);
+    let y = r * Math.sin(phi) * Math.sin(theta) * 1.2; // Taller
+    let z = r * Math.cos(phi) * 0.7; // Flatter
+    
+    x = x * 0.5 + xOffset;
+    
+    const dotMaterial = new THREE.MeshBasicMaterial({ 
+        color: new THREE.Color().setHSL(0.55, 0.8, 0.7 + Math.random() * 0.3),
+        transparent: true,
+        opacity: 0.6
+    });
+    
+    const dot = new THREE.Mesh(dotGeometry, dotMaterial);
+    dot.position.set(x, y, z);
+    brainGroup.add(dot);
+    dots.push(dot);
+}
+
+// Connections
+const lineMaterial = new THREE.LineBasicMaterial({ 
+    color: iceBlue, 
+    transparent: true, 
+    opacity: 0.1 
+});
+
+for (let i = 0; i < dots.length; i++) {
+    let connections = 0;
+    const geometry = new THREE.BufferGeometry();
+    const positions = [];
+    
+    for (let j = i + 1; j < dots.length && connections < 4; j++) {
+        const dist = dots[i].position.distanceTo(dots[j].position);
+        if (dist < connectionDistance) {
+            positions.push(dots[i].position.x, dots[i].position.y, dots[i].position.z);
+            positions.push(dots[j].position.x, dots[j].position.y, dots[j].position.z);
+            connections++;
+        }
+    }
+    
+    if (positions.length > 0) {
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+        const line = new THREE.LineSegments(geometry, lineMaterial);
+        brainGroup.add(line);
+    }
+}
+
+// Thought Orb
+const orbGeom = new THREE.SphereGeometry(0.03, 16, 16);
+const orbMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+const orb = new THREE.Mesh(orbGeom, orbMat);
+scene.add(orb);
+
+// Path for orb
+let currentDotIndex = Math.floor(Math.random() * dots.length);
+let nextDotIndex = -1;
+let progress = 0;
+
+function findNextDot(index) {
+    let best = -1;
+    let minDist = Infinity;
+    for(let i=0; i<dots.length; i++) {
+        if(i === index) continue;
+        const d = dots[index].position.distanceTo(dots[i].position);
+        if(d < 0.3 && d < minDist && Math.random() > 0.5) {
+            minDist = d;
+            best = i;
+        }
+    }
+    return best === -1 ? Math.floor(Math.random() * dots.length) : best;
+}
+
+nextDotIndex = findNextDot(currentDotIndex);
+
+camera.position.z = 2.5;
+
+function animate() {
+    requestAnimationFrame(animate);
+    
+    // Slow rotation
+    brainGroup.rotation.y += 0.002;
+    
+    // Move Orb
+    progress += 0.01;
+    if (progress >= 1) {
+        progress = 0;
+        currentDotIndex = nextDotIndex;
+        nextDotIndex = findNextDot(currentDotIndex);
+    }
+    
+    const start = dots[currentDotIndex].position;
+    const end = dots[nextDotIndex].position;
+    orb.position.lerpVectors(start, end, progress);
+    orb.position.applyMatrix4(brainGroup.matrixWorld);
+
+    renderer.render(scene, camera);
+}
+
+window.addEventListener('resize', () => {
+    const w = container.clientWidth || window.innerWidth;
+    const h = container.clientHeight || window.innerHeight;
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, h);
+});
+
+animate();
+})();
+</script>
+</div>
+<!-- STITCH_THREEJS_END:ANIMATION_2 -->
+</div>
+</div>
+<!-- Messages Overlay -->
+<div class="relative z-10 flex flex-col h-full space-y-8 overflow-y-auto no-scrollbar">
+<!-- History Fading Out (Top) -->
+<div class="flex flex-col gap-6 opacity-20 transition-opacity duration-700">
+<div class="flex flex-col items-start max-w-[85%]">
+<span class="font-label-caps text-label-caps text-primary mb-1 flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-primary-container shadow-[0_0_8px_#4DE3FF]"></span>
+                            SILAS
+                        </span>
+<div class="glass-panel px-bubble-padding-x py-bubble-padding-y rounded-2xl rounded-tl-none">
+<p class="font-body-lg-mobile text-body-lg-mobile">I am analyzing the temporal shifts in your circadian data, Hudson. The discrepancy is minimal.</p>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-6 opacity-40 transition-opacity duration-700">
+<div class="flex flex-col items-end self-end max-w-[85%]">
+<span class="font-label-caps text-label-caps text-on-surface-variant/40 mb-1">HUDSON</span>
+<div class="bg-primary-container/10 backdrop-blur-xl border border-primary-container/20 px-bubble-padding-x py-bubble-padding-y rounded-2xl rounded-tr-none">
+<p class="font-body-lg-mobile text-body-lg-mobile">Does it affect the simulation accuracy for tomorrow's briefing?</p>
+</div>
+</div>
+</div>
+<!-- Current Conversation (Full Opacity) -->
+<div class="flex flex-col gap-6 mt-auto">
+<div class="flex flex-col items-start max-w-[85%]">
+<span class="font-label-caps text-label-caps text-primary mb-1 flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-primary-container shadow-[0_0_8px_#4DE3FF]"></span>
+                            SILAS
+                        </span>
+<div class="glass-panel px-bubble-padding-x py-bubble-padding-y rounded-2xl rounded-tl-none">
+<p class="font-body-lg-mobile text-body-lg-mobile">The simulation remains stable. However, I suggest adjusting the oxygenation levels in the chamber to compensate for the drift.</p>
+</div>
+</div>
+<div class="flex flex-col items-end self-end max-w-[85%]">
+<span class="font-label-caps text-label-caps text-on-surface-variant/60 mb-1">HUDSON</span>
+<div class="bg-primary-container/10 backdrop-blur-xl border border-primary-container/30 px-bubble-padding-x py-bubble-padding-y rounded-2xl rounded-tr-none">
+<p class="font-body-lg-mobile text-body-lg-mobile">Initiate the adjustment. How long until the system is fully optimized?</p>
+</div>
+</div>
+<!-- Typing State -->
+<div class="flex flex-col items-start animate-pulse">
+<span class="font-label-caps text-label-caps text-primary mb-1 flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-primary-container shadow-[0_0_8px_#4DE3FF]"></span>
+                            SILAS
+                        </span>
+<div class="glass-panel px-bubble-padding-x py-4 rounded-2xl rounded-tl-none flex items-center gap-1">
+<span class="typing-dot"></span>
+<span class="typing-dot"></span>
+<span class="typing-dot"></span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer: Floating Input + Bottom Nav Shell -->
+<footer class="fixed bottom-0 left-0 right-0 z-50 px-container-padding pb-8">
+<div class="flex flex-col gap-4">
+<!-- Floating Pill Input Bar -->
+<div class="glass-panel rounded-full flex items-center px-2 py-2 gap-2 shadow-2xl">
+<button class="p-3 text-primary-container/60 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">mic</span>
+</button>
+<input class="bg-transparent border-none focus:ring-0 text-on-surface placeholder:text-on-surface-variant/30 flex-grow font-body-lg-mobile px-2" placeholder="talk to silas..." type="text"/>
+<button class="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center ice-blue-glow transition-transform active:scale-90">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">arrow_upward</span>
+</button>
+</div>
+<!-- Simplified Bottom Nav Logic (Hidden icons only as requested in Shell mandate) -->
+<nav class="flex justify-around items-center px-4 py-3 glass-panel rounded-full border border-white/10 hidden">
+<!-- BottomNavBar components from JSON would render here if required for top-level navigation. 
+                     Hiding as per "Shell Visibility & Relevance" rule to prioritize content canvas during chat session. -->
+</nav>
+</div>
+</footer>
+<!-- Scripts for micro-interactions -->
+<script>
+        // Military Clock Logic
+        function updateClock() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const year = now.getFullYear();
+
+            document.getElementById('military-clock').textContent = `${hours}:${minutes}`;
+            document.getElementById('current-date').textContent = `${day}.${month}.${year}`;
+        }
+
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Prevent body scroll but allow chat scroll
+        document.querySelector('.no-scrollbar').addEventListener('touchstart', function(e) {
+            e.stopPropagation();
+        }, {passive: true});
+
+        // Atmospheric interaction
+        const input = document.querySelector('input');
+        input.addEventListener('focus', () => {
+            document.querySelector('.chat-mask').style.opacity = '0.6';
+        });
+        input.addEventListener('blur', () => {
+            document.querySelector('.chat-mask').style.opacity = '1';
+        });
+    </script>
+<style>
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</body></html>

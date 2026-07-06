@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Silas Settings</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-fixed": "#a5eeff",
+                        "surface-container-highest": "#313349",
+                        "error-container": "#93000a",
+                        "primary": "#cbf5ff",
+                        "on-secondary-container": "#004f24",
+                        "on-secondary-fixed": "#00210c",
+                        "outline": "#869397",
+                        "surface-tint": "#3dd8f4",
+                        "surface-container-lowest": "#0a0c20",
+                        "on-secondary": "#003919",
+                        "secondary-fixed-dim": "#36e27c",
+                        "background": "#101226",
+                        "secondary-fixed": "#61ff97",
+                        "on-error-container": "#ffdad6",
+                        "on-primary": "#00363f",
+                        "on-error": "#690005",
+                        "on-surface-variant": "#bbc9cd",
+                        "on-surface": "#e0e0fd",
+                        "surface-dim": "#101226",
+                        "tertiary-container": "#c8ceff",
+                        "surface-container-high": "#26283e",
+                        "on-primary-fixed-variant": "#004e5a",
+                        "inverse-on-surface": "#2d2f44",
+                        "inverse-primary": "#006877",
+                        "on-tertiary-fixed-variant": "#3c4373",
+                        "on-primary-fixed": "#001f25",
+                        "tertiary-fixed": "#dee0ff",
+                        "on-tertiary-container": "#4e5687",
+                        "secondary": "#3fe881",
+                        "on-tertiary-fixed": "#0e1745",
+                        "on-secondary-fixed-variant": "#005227",
+                        "on-background": "#e0e0fd",
+                        "surface-bright": "#36384e",
+                        "primary-container": "#4de3ff",
+                        "surface-variant": "#313349",
+                        "tertiary": "#ececff",
+                        "error": "#ffb4ab",
+                        "surface-container-low": "#181a2e",
+                        "tertiary-fixed-dim": "#bcc3fb",
+                        "outline-variant": "#3c494c",
+                        "surface": "#101226",
+                        "primary-fixed-dim": "#3dd8f4",
+                        "secondary-container": "#00cb68",
+                        "surface-container": "#1c1e33",
+                        "on-tertiary": "#252d5b",
+                        "on-primary-container": "#006371",
+                        "inverse-surface": "#e0e0fd"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "bubble-padding-y": "12px",
+                        "bubble-padding-x": "16px",
+                        "section-margin": "32px",
+                        "container-padding": "20px",
+                        "element-gap": "12px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Hanken Grotesk"],
+                        "body-lg-mobile": ["Hanken Grotesk"],
+                        "body-sm": ["Hanken Grotesk"],
+                        "headline-md": ["Hanken Grotesk"],
+                        "display-time": ["JetBrains Mono"],
+                        "label-caps": ["JetBrains Mono"],
+                        "headline-lg": ["Hanken Grotesk"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "body-lg-mobile": ["16px", {"lineHeight": "22px", "fontWeight": "400"}],
+                        "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "500"}],
+                        "display-time": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "500"}],
+                        "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.1em", "fontWeight": "600"}],
+                        "headline-lg": ["28px", {"lineHeight": "34px", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .slider-thumb::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #4de3ff;
+            cursor: pointer;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(77, 227, 255, 0.5);
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #4de3ff;
+        }
+        .toggle-checkbox:checked + .toggle-label .toggle-dot {
+            transform: translateX(100%);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen font-body-lg-mobile overflow-x-hidden">
+<!-- Top App Bar (Modified for Settings Back Navigation) -->
+<header class="fixed top-0 left-0 right-0 z-50 bg-surface/10 backdrop-blur-xl rounded-full mt-4 mx-5 border border-white/10 flex justify-between items-center px-bubble-padding-x py-bubble-padding-y">
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/5 transition-opacity duration-500 text-on-surface">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface tracking-tight">settings</h1>
+<div class="w-10"></div> <!-- Spacer for centering -->
+</header>
+<main class="pt-28 pb-32 px-container-padding space-y-section-margin">
+<!-- Identity Section -->
+<section class="space-y-element-gap">
+<h2 class="font-label-caps text-label-caps text-on-surface-variant/60 px-4">IDENTITY</h2>
+<div class="glass-panel rounded-[20px] p-5 flex items-center gap-4">
+<div class="w-12 h-12 rounded-full overflow-hidden border border-primary-container/30">
+<img class="w-full h-full object-cover" data-alt="A highly detailed close-up portrait of a young person named Hudson with a calm, serene expression. The lighting is moody and atmospheric, using deep indigo and electric ice-blue highlights to create a high-end digital aesthetic. The background is a soft, out-of-focus digital void with subtle glowing particles. The style is cinematic and minimalist, emphasizing clean lines and a futuristic, ethereal mood." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA7w2siR0cyCoQA2oeAY8P_tDt2T0cVQYblt5MG2DCf6jI_7CgWgoz9QT4Icd5kIQF-wVSVs5K7DND0f_vOFJS_YOLElbhpxtZpSoZkMwec8j0LlfTTV-H4i6Qn4KXWBmhmyrxDKvfWU3aVQdjMF9NCFXgSjyM6ruFA_40cdFIcfjDsOGcyXJdEWcSwgIh4O8k4L7wzn6JRMDZdXK6x97xvGsMS4sP4PJ5CzcRhsuMTBs5alRhg3UgZ"/>
+</div>
+<div>
+<p class="font-headline-md text-headline-md text-on-surface">Hudson</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Primary Entity</p>
+</div>
+<button class="ml-auto text-primary-container">
+<span class="material-symbols-outlined">edit</span>
+</button>
+</div>
+</section>
+<!-- Presence Section -->
+<section class="space-y-element-gap">
+<h2 class="font-label-caps text-label-caps text-on-surface-variant/60 px-4">PRESENCE</h2>
+<div class="glass-panel rounded-[20px] p-5 space-y-6">
+<!-- Toggle: Brain Intensity -->
+<div class="flex items-center justify-between">
+<div class="space-y-1">
+<p class="font-body-lg-mobile text-body-lg-mobile text-on-surface">Brain intensity</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Subtle / Lively</p>
+</div>
+<div class="relative inline-block w-12 h-6 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 border-transparent appearance-none cursor-pointer z-10" id="brain_toggle" name="toggle" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-surface-container-highest cursor-pointer transition-colors duration-200" for="brain_toggle">
+<span class="toggle-dot absolute block w-6 h-6 rounded-full bg-on-primary-container transition-transform duration-200"></span>
+</label>
+</div>
+</div>
+<!-- Slider: Typing Speed -->
+<div class="space-y-4">
+<div class="flex justify-between items-center">
+<p class="font-body-lg-mobile text-body-lg-mobile text-on-surface">Typing speed</p>
+<span class="font-label-caps text-label-caps text-primary-container">0.8s</span>
+</div>
+<input class="w-full h-1 bg-surface-container-highest rounded-full appearance-none slider-thumb cursor-pointer" max="2.0" min="0.1" step="0.1" type="range" value="0.8"/>
+</div>
+</div>
+</section>
+<!-- Memory Section -->
+<section class="space-y-element-gap">
+<h2 class="font-label-caps text-label-caps text-on-surface-variant/60 px-4">MEMORY</h2>
+<div class="glass-panel rounded-[20px] divide-y divide-white/5">
+<div class="p-5 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary-container">shield_with_heart</span>
+<p class="font-body-lg-mobile text-body-lg-mobile text-on-surface">Vault status</p>
+</div>
+<span class="font-label-caps text-label-caps text-secondary px-3 py-1 bg-secondary/10 rounded-full">ENCRYPTED</span>
+</div>
+<div class="p-5 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary-container">sticky_note_2</span>
+<p class="font-body-lg-mobile text-body-lg-mobile text-on-surface">Note count</p>
+</div>
+<span class="font-body-lg-mobile text-body-lg-mobile text-on-surface-variant">1,284 entries</span>
+</div>
+</div>
+</section>
+<!-- Danger Zone Section -->
+<section class="space-y-element-gap">
+<h2 class="font-label-caps text-label-caps text-error/60 px-4">DANGER ZONE</h2>
+<button class="w-full glass-panel rounded-[20px] p-5 flex items-center justify-between group active:scale-95 transition-transform duration-200">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-error">delete_forever</span>
+<p class="font-body-lg-mobile text-body-lg-mobile text-error">Clear conversation</p>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant/40 group-hover:text-error transition-colors">chevron_right</span>
+</button>
+</section>
+</main>
+<!-- Bottom Navigation Bar (Hidden on sub-pages as per context, but rendered as requested by Shared Components for structural integrity of the "Settings" intent) -->
+<!-- Determined active tab: Account_Circle -->
+<nav class="fixed bottom-0 left-0 right-0 z-50 flex justify-around items-center px-container-padding py-3 bg-surface/10 backdrop-blur-xl rounded-full mb-8 mx-5 border border-white/10">
+<button class="text-on-surface-variant/60 p-3 hover:text-primary transition-colors scale-95 active:scale-90 transition-transform">
+<span class="material-symbols-outlined">bubble_chart</span>
+</button>
+<button class="text-on-surface-variant/60 p-3 hover:text-primary transition-colors scale-95 active:scale-90 transition-transform">
+<span class="material-symbols-outlined">history</span>
+</button>
+<button class="text-on-surface-variant/60 p-3 hover:text-primary transition-colors scale-95 active:scale-90 transition-transform">
+<span class="material-symbols-outlined">tune</span>
+</button>
+<button class="bg-primary-container/20 text-primary-container rounded-full p-3 scale-95 active:scale-90 transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">account_circle</span>
+</button>
+</nav>
+<!-- Subtle Background Glow -->
+<div class="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
+<div class="absolute -top-1/4 -right-1/4 w-[80vw] h-[80vw] bg-primary/5 rounded-full blur-[120px]"></div>
+<div class="absolute -bottom-1/4 -left-1/4 w-[80vw] h-[80vw] bg-surface-container-highest/20 rounded-full blur-[120px]"></div>
+</div>
+<script>
+        // Micro-interactions for sliders and toggles
+        const slider = document.querySelector('input[type="range"]');
+        const speedVal = document.querySelector('.text-primary-container.font-label-caps');
+        
+        slider.addEventListener('input', (e) => {
+            speedVal.textContent = `${e.target.value}s`;
+        });
+
+        // Simple haptic-like feedback simulation
+        const buttons = document.querySelectorAll('button');
+        buttons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                btn.style.opacity = '0.7';
+                setTimeout(() => btn.style.opacity = '1', 100);
+            });
+        });
+    </script>
+</body></html>
