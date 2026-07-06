@@ -6,16 +6,16 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["Hanken Grotesk", "-apple-system", "BlinkMacSystemFont", "Inter", "system-ui", "sans-serif"],
-        mono: ["JetBrains Mono", "ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "monospace"],
+        sans: ["var(--font-hanken)", "-apple-system", "BlinkMacSystemFont", "Inter", "system-ui", "sans-serif"],
+        mono: ["var(--font-jetbrains)", "ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "monospace"],
         // Design-system type roles (see /design/DESIGN.md)
-        "headline-lg": ["Hanken Grotesk"],
-        "headline-md": ["Hanken Grotesk"],
-        "body-lg": ["Hanken Grotesk"],
-        "body-lg-mobile": ["Hanken Grotesk"],
-        "body-sm": ["Hanken Grotesk"],
-        "label-caps": ["JetBrains Mono"],
-        "display-time": ["JetBrains Mono"],
+        "headline-lg": ["var(--font-hanken)"],
+        "headline-md": ["var(--font-hanken)"],
+        "body-lg": ["var(--font-hanken)"],
+        "body-lg-mobile": ["var(--font-hanken)"],
+        "body-sm": ["var(--font-hanken)"],
+        "label-caps": ["var(--font-jetbrains)"],
+        "display-time": ["var(--font-jetbrains)"],
       },
       fontSize: {
         "headline-lg": ["28px", { lineHeight: "34px", fontWeight: "600" }],

@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { MessageList } from "./MessageList";
 import { ChatInput } from "./ChatInput";
+import { Header } from "./Header";
 import {
   cpsFromTypingSpeed,
   getTypingSpeed,
@@ -10,6 +11,9 @@ import {
   setCurrentConversationId,
   TYPING_SPEED_KEY,
 } from "@/lib/settings";
+
+// After this long with no interaction, older messages evaporate (fade by age).
+const IDLE_MS = 6000;
 
 type Message = {
   id: string;
@@ -103,6 +107,44 @@ export function ChatInterface({
   useEffect(() => {
     if (conversationId) setCurrentConversationId(conversationId);
   }, [conversationId]);
+
+  // Evaporation: when idle, MessageList fades older messages by age. Any
+  // interaction (scroll/touch/keypress) or new message restores full opacity.
+  const [idle, setIdle] = useState(false);
+  const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const resetIdle = useCallback(() => {
+    setIdle(false);
+    if (idleTimer.current) clearTimeout(idleTimer.current);
+    idleTimer.current = setTimeout(() => setIdle(true), IDLE_MS);
+  }, []);
+
+  // Restore instantly on any global interaction, then re-arm the idle timer.
+  useEffect(() => {
+    const wake = () => resetIdle();
+    window.addEventListener("keydown", wake);
+    window.addEventListener("touchstart", wake, { passive: true });
+    window.addEventListener("pointerdown", wake);
+    return () => {
+      window.removeEventListener("keydown", wake);
+      window.removeEventListener("touchstart", wake);
+      window.removeEventListener("pointerdown", wake);
+    };
+  }, [resetIdle]);
+
+  // Kick off the idle countdown on mount; clean up on unmount.
+  useEffect(() => {
+    resetIdle();
+    return () => {
+      if (idleTimer.current) clearTimeout(idleTimer.current);
+    };
+  }, [resetIdle]);
+
+  // A new (or still-streaming) message counts as interaction: keep everything
+  // at full opacity while it lands, then let the idle timer fade it later.
+  useEffect(() => {
+    resetIdle();
+  }, [messages, resetIdle]);
 
   useEffect(() => {
     if (!ONBOARDING_ENABLED) {
@@ -311,19 +353,25 @@ export function ChatInterface({
 
   return (
     <div className="relative w-full min-h-screen flex flex-col">
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 pt-16 pb-32">
+      <Header />
+
+      <div
+        ref={scrollRef}
+        onScroll={resetIdle}
+        className="flex-1 overflow-y-auto px-5 pt-28 pb-36"
+      >
         <div className="max-w-2xl mx-auto">
           {ONBOARDING_ENABLED && showOnboarding && onboardingMessage && (
-            <div className="mb-8 p-5 rounded-xl bg-white/[0.04] border border-white/10 text-white/90 leading-relaxed whitespace-pre-wrap">
+            <div className="mb-8 p-5 rounded-[20px] silas-glass text-[var(--text)] leading-relaxed whitespace-pre-wrap">
               {onboardingMessage}
             </div>
           )}
-          <MessageList messages={messages} />
+          <MessageList messages={messages} idle={idle} />
         </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black via-black/80 to-transparent">
-        <div className="max-w-2xl mx-auto">
+      <div className="fixed bottom-0 left-0 right-0 px-5 pb-8 pt-6 pointer-events-none">
+        <div className="max-w-2xl mx-auto pointer-events-auto">
           <ChatInput onSend={send} disabled={sending} />
         </div>
       </div>
