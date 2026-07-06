@@ -9,3 +9,4 @@ neural/
 # Daemon runtime state (process-local, not for version control)
 daemon.pid
 daemon-state.json
+metrics/harness-loop.json
