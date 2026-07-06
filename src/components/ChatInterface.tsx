@@ -38,6 +38,10 @@ type Reveal = {
   pauseMs: number; // remaining "thinking" pause before the next reveal
 };
 
+// Single on/off switch for the onboarding paragraph shown on open. Flip to
+// `true` to fully restore the fetch("/api/onboarding") behavior.
+const ONBOARDING_ENABLED = false;
+
 export function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -51,6 +55,10 @@ export function ChatInterface() {
   const revealRef = useRef<Reveal | null>(null);
 
   useEffect(() => {
+    if (!ONBOARDING_ENABLED) {
+      setShowOnboarding(false);
+      return;
+    }
     fetch("/api/onboarding")
       .then((r) => r.json())
       .then((data) => {
@@ -254,7 +262,7 @@ export function ChatInterface() {
     <div className="relative w-full min-h-screen flex flex-col">
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 pt-16 pb-32">
         <div className="max-w-2xl mx-auto">
-          {showOnboarding && onboardingMessage && (
+          {ONBOARDING_ENABLED && showOnboarding && onboardingMessage && (
             <div className="mb-8 p-5 rounded-xl bg-white/[0.04] border border-white/10 text-white/90 leading-relaxed whitespace-pre-wrap">
               {onboardingMessage}
             </div>
