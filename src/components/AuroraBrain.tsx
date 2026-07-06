@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { getBrainIntensity, onSettingsChange, BRAIN_INTENSITY_KEY } from "@/lib/settings";
 
 /**
  * Aurora-alive brain — autonomous creature behind everything.
@@ -83,6 +84,22 @@ export function AuroraBrain() {
 
     // Expose the glow tunable to CSS so .bright / .fire scale from one place.
     stage.style.setProperty("--ab-glow", String(GLOW));
+
+    // ----- Brain-intensity preference (settings → "Brain intensity") ---------
+    // "lively" is the baseline; "subtle" dims the glow and slows the firing
+    // cadence. Read once on mount, then re-read live when the setting changes.
+    // liveMul multiplies firing intervals (>1 = calmer); the loops read it live.
+    let liveMul = 1;
+    function applyIntensity() {
+      const mode = getBrainIntensity();
+      const glowScale = mode === "subtle" ? 0.5 : 1;
+      liveMul = mode === "subtle" ? 1.8 : 1;
+      stage.style.setProperty("--ab-glow", String(GLOW * glowScale));
+    }
+    applyIntensity();
+    const offSettings = onSettingsChange((key) => {
+      if (key === BRAIN_INTENSITY_KEY) applyIntensity();
+    });
 
     // Respect reduced-motion: halve density + traveling-thought frequency, slow the loops.
     const reduce =
@@ -350,7 +367,7 @@ export function AuroraBrain() {
       // Deep into thinking, fire a couple of cascades at once.
       if (intensity > 0.6 && Math.random() < 0.5) cascade(randNode(), depth, Math.random() < 0.5);
       const ms =
-        lerp(IDLE_FIRE_MS, THINK_FIRE_MS, intensity) * slow * (0.7 + Math.random() * 0.6);
+        lerp(IDLE_FIRE_MS, THINK_FIRE_MS, intensity) * slow * liveMul * (0.7 + Math.random() * 0.6);
       later(constantFire, ms);
     }
     later(constantFire, 500);
@@ -365,7 +382,7 @@ export function AuroraBrain() {
       } else if (Math.random() < 0.5) {
         travelingThought(Math.random() < 0.25); // occasional idle thought
       }
-      const ms = lerp(IDLE_TRAVEL_MS, TRAVEL_THOUGHT_MS, intensity) * travelMul;
+      const ms = lerp(IDLE_TRAVEL_MS, TRAVEL_THOUGHT_MS, intensity) * travelMul * liveMul;
       later(travelLoop, ms);
     }
     later(travelLoop, 1200);
@@ -500,6 +517,7 @@ export function AuroraBrain() {
       stage.removeEventListener("mousemove", onMove);
       window.removeEventListener("silas:thinking", onThinking as EventListener);
       window.removeEventListener("silas:token", onToken as EventListener);
+      offSettings();
     };
   }, []);
 

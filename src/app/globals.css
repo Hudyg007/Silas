@@ -26,6 +26,55 @@ html, body {
 ::selection { background: rgba(180, 215, 255, 0.25); color: white; }
 
 /* ============================================ */
+/* Design-system surface primitives             */
+/* ============================================ */
+
+/* Frosted glass container — 5% white fill, 10% white border, 20px blur.
+   Matches the reference Stitch screens (conversations / settings). */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Older thoughts dissolve toward the top of the list — the "evaporation echo". */
+.evaporation-gradient {
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.35) 0%, rgba(0, 0, 0, 1) 22%);
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.35) 0%, rgba(0, 0, 0, 1) 22%);
+}
+
+/* Soft "breath" pulse for the live indicator dot. */
+.pulse-soft {
+  animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* Ice-blue range slider thumb (settings → typing speed). */
+.silas-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #4de3ff;
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(77, 227, 255, 0.5);
+}
+.silas-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 50%;
+  background: #4de3ff;
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(77, 227, 255, 0.5);
+}
+
+/* ============================================ */
 /* Aurora-alive brain background — v4 ported    */
 /* ============================================ */
 
