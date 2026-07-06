@@ -1,6 +1,6 @@
 import "./globals.css";
 import type { Metadata } from "next";
-import { AuroraBrain } from "@/components/AuroraBrain";
+import { BrainCanvas } from "@/components/BrainCanvas";
 
 export const metadata: Metadata = {
   title: "Silas",
@@ -11,7 +11,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body>
-        <AuroraBrain />
+        <BrainCanvas />
         <div className="relative z-10 min-h-screen">{children}</div>
       </body>
     </html>
