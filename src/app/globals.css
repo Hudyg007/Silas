@@ -148,6 +148,28 @@ html, body {
 }
 
 /* ============================================ */
+/* BrainCanvas — three.js thought-orb backdrop  */
+/* Full-viewport, behind the chat, non-interactive. Dark surface gradient */
+/* (Design System) sits under the alpha-transparent WebGL canvas.         */
+/* ============================================ */
+
+.brain-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 90% 70% at 50% 42%,
+    #16182e 0%,
+    #0b0d1e 55%,
+    #05060f 100%
+  );
+}
+.brain-canvas canvas {
+  display: block;
+}
+
+/* ============================================ */
 /* Aurora-alive brain background — v4 ported    */
 /* ============================================ */
 

@@ -1,7 +1,7 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import { Hanken_Grotesk, JetBrains_Mono } from "next/font/google";
-import { AuroraBrain } from "@/components/AuroraBrain";
+import { BrainCanvas } from "@/components/BrainCanvas";
 
 // Hanken Grotesk drives all body/UI text; JetBrains Mono is reserved for the
 // clock, date, and the uppercase name labels above each message bubble.
@@ -28,7 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${hanken.variable} ${jetbrains.variable}`}>
       <body>
-        <AuroraBrain />
+        <BrainCanvas />
         <div className="relative z-10 min-h-screen">{children}</div>
       </body>
     </html>
