@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-07-06T10:58:38.950Z",
+  "projectRoot": "/home/user/Silas",
+  "structure": {
+    "hasPackageJson": true,
+    "hasTsConfig": true,
+    "hasClaudeConfig": true,
+    "hasClaudeFlow": true
+  },
+  "scannedAt": 1783335518950
+}

@@ -1,0 +1,138 @@
+{
+  "timestamp": "2026-07-06T11:04:16.284Z",
+  "mode": "headless",
+  "workerType": "optimize",
+  "model": "sonnet",
+  "durationMs": 97334,
+  "executionId": "optimize_1783335758950_x62khe",
+  "success": true,
+  "findings": {
+    "sections": [
+      {
+        "title": "Performance Analysis: Silas Codebase",
+        "content": "\n",
+        "level": 1
+      },
+      {
+        "title": "1. N+1 / Redundant Query Patterns",
+        "content": "\n",
+        "level": 2
+      },
+      {
+        "title": "🔴 Triple embedding of the same text (biggest win)",
+        "content": "In `src/app/api/chat/route.ts`, the user message gets embedded **three separate times** via three separate OpenAI API calls:\n\n```ts\nconst userEmbedding = await embed(message);           // embed #1 (for storage)\n...\nconst [notes, pastMessages] = await Promise.all([\n  retrieveNotes(message, { count: 8 }),                // embed #2 (inside retrieveNotes)\n  retrievePastMessages(message, conversationId!, ...),  // embed #3 (inside retrievePastMessages)\n]);\n```\n\nEach embed call is a network round-trip to OpenAI (~100-300ms) — this adds ~200-600ms of pure waste to every chat turn and 3x's your embedding bill.\n\n**Fix:** embed once, pass the vector down.\n\n```ts\n// src/lib/rag.ts\nexport async function retrieveNotes(\n  queryEmbedding: number[],\n  options: { count?: number; threshold?: number } = {}\n): Promise<RetrievedNote[]> {\n  const supabase = createAdmin();\n  const { data, error } = await supabase.rpc(\"match_vault_notes\", {\n    query_embedding: queryEmbedding as unknown as string,\n    match_count: options.count ?? 8,\n    similarity_threshold: options.threshold ?? 0.5,\n  });\n  if (error) { console.error(\"retrieveNotes error:\", error); return []; }\n  return (data as RetrievedNote[]) || [];\n}\n// same change for retrievePastMessages(queryEmbedding, conversationId, options)\n```\n\n```ts\n// route.ts\nconst userEmbedding = await embed(message);\nawait admin.from(\"messages\").insert({ ..., embedding: userEmbedding as unknown as string });\n\nconst [notes, pastMessages] = await Promise.all([\n  retrieveNotes(userEmbedding, { count: 8 }),\n  retrievePastMessages(userEmbedding, conversationId!, { count: 5 }),\n]);\n```\n\n",
+        "level": 3
+      },
+      {
+        "title": "🟡 `getActivePrompt()` — 2 sequential DB round trips on every chat message",
+        "content": "`src/lib/self-prompt.ts` fetches `silas_prompt_state` then `silas_prompt_versions` sequentially, on *every single chat request*, even though the active prompt rarely changes.\n\n**Fix:** either a single joined RPC, or (simpler) an in-memory TTL cache invalidated on edit:\n\n```ts\n// src/lib/self-prompt.ts\nlet promptCache: { version: number; body: string; expiresAt: number } | null = null;\nconst PROMPT_TTL_MS = 30_000;\n\nexport async function getActivePrompt() {\n  if (promptCache && promptCache.expiresAt > Date.now()) {\n    return { version: promptCache.version, body: promptCache.body };\n  }\n  // ...existing fetch logic...\n  promptCache = { version, body, expiresAt: Date.now() + PROMPT_TTL_MS };\n  return { version, body };\n}\n\n// bust the cache whenever it changes\nexport async function applyEdit(...) {\n  // ...on success:\n  promptCache = null;\n}\nexport async function revertTo(...) {\n  // ...on success:\n  promptCache = null;\n}\n```\n\n",
+        "level": 3
+      },
+      {
+        "title": "🟡 `sampleNotes()` pulls 500 full rows to keep 20",
+        "content": "`src/lib/vault.ts`:\n\n```ts\nconst { data } = await supabase.from(\"vault_notes\").select(\"*\").not(\"content\", \"is\", null).limit(500);\n// shuffle in JS, slice(0, 20)\n```\n\nThis drags full note `content` for 480 rows you throw away — expensive on a table with 7,000+ notes containing full markdown bodies. Push the randomness into SQL:\n\n```sql\ncreate or replace function sample_vault_notes(sample_count int)\nreturns setof vault_notes as $$\n  select * from vault_notes where content is not null\n  order by random() limit sample_count;\n$$ language sql stable;\n```\n\n```ts\nexport async function sampleNotes(count = 20): Promise<VaultNote[]> {\n  const supabase = createAdmin();\n  const { data, error } = await supabase.rpc(\"sample_vault_notes\", { sample_count: count });\n  if (error || !data) { console.error(\"sampleNotes error:\", error); return []; }\n  return data as VaultNote[];\n}\n```\n\n",
+        "level": 3
+      },
+      {
+        "title": "🟡 Missing vector indexes (infra, not code, but high-impact)",
+        "content": "`match_vault_notes` and `match_past_messages` run on *every chat message*. If the underlying pgvector columns don't have an `ivfflat`/`hnsw` index, these degrade to full scans as the vault/message table grows. Worth confirming in the migration files.\n\n---\n\n",
+        "level": 3
+      },
+      {
+        "title": "2. React Re-renders",
+        "content": "\nThe React source for `ChatInterface` and `AuroraBrain` isn't in the provided context, so I can't point at specific lines — but given this is a **streaming SSE chat UI**, the highest-risk pattern is:\n\n```tsx\n// Anti-pattern likely present: one state array holding all messages,\n// re-set on every SSE token\nconst [messages, setMessages] = useState<Message[]>([]);\n// on each `delta` event:\nsetMessages(prev => {\n  const updated = [...prev];\n  updated[updated.length - 1].content += token; // mutates + full array re-render\n  return updated;\n});\n```\n\nThis re-renders **every** rendered message component on every token (dozens of times per second during a stream).\n\n**Fix pattern:**\n```tsx\n// Keep committed history separate from the in-flight stream buffer\nconst [messages, setMessages] = useState<Message[]>([]);\nconst [streamingText, setStreamingText] = useState(\"\");\n\n// Memoize message list items so old messages never re-render\nconst MessageItem = React.memo(function MessageItem({ msg }: { msg: Message }) {\n  return <div>{msg.content}</div>;\n});\n\n// Only the streaming bubble re-renders on each token\n{messages.map(m => <MessageItem key={m.id} msg={m} />)}\n{streamingText && <div>{streamingText}</div>}\n```\n\nFor high token rates, batch state updates with `requestAnimationFrame` rather than calling `setState` per SSE event:\n```tsx\nconst bufferRef = useRef(\"\");\nconst rafRef = useRef<number>();\nfunction onDelta(token: string) {\n  bufferRef.current += token;\n  if (!rafRef.current) {\n    rafRef.current = requestAnimationFrame(() => {\n      setStreamingText(bufferRef.current);\n      rafRef.current = undefined;\n    });\n  }\n}\n```\n\nIf `AuroraBrain` is a canvas/animation component mounted at the root layout, verify it cleans up its animation loop:\n```tsx\nuseEffect(() => {\n  const id = requestAnimationFrame(loop);\n  return () => cancelAnimationFrame(id); // don't leak on unmount\n}, []);\n```\n(It's mounted once at root so this mostly matters for HMR/dev, but worth confirming.)\n\n---\n\n",
+        "level": 2
+      },
+      {
+        "title": "3. Caching Opportunities",
+        "content": "\n| What | Where | Suggestion |\n|---|---|---|\n| Active system prompt | `self-prompt.ts:getActivePrompt` | In-memory TTL cache (above) — saves 2 DB round trips per message |\n| Kill switch | `self-prompt.ts:isSelfEditEnabled` | Same TTL-cache pattern, invalidate rarely needed since it's admin-toggled |\n| Query embedding | chat route | Reuse one embedding across storage + both RAG calls (above) |\n| Onboarding message | `api/onboarding/route.ts` | Already cached correctly via `user_state.onboarded` — good pattern, no change needed |\n| Vault note sampling | `vault.ts:sampleNotes` | Push to SQL `random()` (above) instead of re-fetching 500 rows every onboarding check |\n\n---\n\n",
+        "level": 2
+      },
+      {
+        "title": "4. Memory / Resource Leaks",
+        "content": "\n",
+        "level": 2
+      },
+      {
+        "title": "🔴 No abort handling on the chat stream",
+        "content": "In `src/app/api/chat/route.ts`, the `ReadableStream`'s tool-round loop never checks whether the client disconnected:\n\n```ts\nfor (let round = 0; round < MAX_TOOL_ROUNDS; round++) {\n  const stream = await streamChat({ ... });\n  for await (const event of stream) { ... controller.enqueue(...) }\n  ...\n}\n```\n\nIf the user closes the tab or navigates away mid-stream, this keeps running server-side — burning Anthropic tokens, holding the `convo` array and `fullText` string in memory, and potentially throwing when `controller.enqueue` is called on a cancelled controller.\n\n**Fix:**\n```ts\nconst responseStream = new ReadableStream({\n  async start(controller) {\n    const signal = req.signal;\n    try {\n      for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {\n        if (signal.aborted) break;\n        const stream = await streamChat({ ... });\n        for await (const event of stream) {\n          if (signal.aborted) break;\n          if (event.type === \"content_block_delta\" && event.delta.type === \"text_delta\") {\n            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: \"delta\", text: event.delta.text })}\\n\\n`));\n          }\n        }\n        if (signal.aborted) break;\n        // ...\n      }\n    } finally {\n      controller.close();\n    }\n  },\n  cancel() {\n    // ReadableStream calls this on client disconnect — nothing extra needed\n    // as long as we're checking req.signal.aborted in the loop above.\n  },\n});\n```\n\n",
+        "level": 3
+      },
+      {
+        "title": "🟡 Fire-and-forget note extraction — confirm it isn't awaited inline",
+        "content": "`extractAndSaveNote` is documented as \"never blocks user-facing chat response,\" but if the (truncated) tail of `route.ts` does `await extractAndSaveNote(...)` before closing the stream, it adds a full extra Anthropic round trip to response latency for no user-visible benefit. Use Next's `after()` to run it post-response instead:\n\n```ts\nimport { after } from \"next/server\";\n// ...\nafter(() => extractAndSaveNote({ userMessage: message, assistantMessage: fullText, conversationId }));\n```\n\n---\n\n",
+        "level": 3
+      },
+      {
+        "title": "5. Redundant Computations",
+        "content": "\n- **Duplicate embedding** — covered in §1, the single biggest redundant-computation fix (3x → 1x per chat turn).\n- **`sampleNotes` in-memory Fisher-Yates over 500 rows** — replaced by SQL `random()` in §1; also removes the temp array copy (`[...data]`) and O(n) shuffle on every onboarding check.\n- **`getActivePrompt` refetching unchanged data every message** — same fix as caching section; the prompt body typically doesn't change turn-to-turn.\n- **History fetch** (`messages.select(...).order(desc).limit(10)` then `.reverse()`) is already efficient — just confirm a composite index exists on `(conversation_id, created_at)` since it's the hottest query path (every chat message).\n\n---\n\n",
+        "level": 2
+      },
+      {
+        "title": "Priority Order (impact vs. effort)",
+        "content": "1. **Dedupe the 3x embedding calls** — cheap fix, cuts ~200-600ms + 2/3 of embedding cost per message.\n2. **Cache `getActivePrompt`/`isSelfEditEnabled`** — cheap fix, removes 2+ DB round trips per message.\n3. **Add stream abort handling** — prevents wasted Anthropic spend on abandoned requests.\n4. **Fix `sampleNotes` to sample in SQL** — only hits onboarding path, lower frequency but easy win.\n5. **Review `ChatInterface.tsx`** directly (not in provided context) for the streaming re-render pattern — worth a follow-up pass since it's the highest-frequency render path in the app.\n\nWant me to pull up `ChatInterface.tsx` and `AuroraBrain.tsx` to check the actual re-render behavior instead of the generic guidance above?",
+        "level": 2
+      }
+    ],
+    "codeBlocks": [
+      {
+        "language": "ts",
+        "code": "const userEmbedding = await embed(message);           // embed #1 (for storage)\n...\nconst [notes, pastMessages] = await Promise.all([\n  retrieveNotes(message, { count: 8 }),                // embed #2 (inside retrieveNotes)\n  retrievePastMessages(message, conversationId!, ...),  // embed #3 (inside retrievePastMessages)\n]);"
+      },
+      {
+        "language": "ts",
+        "code": "// src/lib/rag.ts\nexport async function retrieveNotes(\n  queryEmbedding: number[],\n  options: { count?: number; threshold?: number } = {}\n): Promise<RetrievedNote[]> {\n  const supabase = createAdmin();\n  const { data, error } = await supabase.rpc(\"match_vault_notes\", {\n    query_embedding: queryEmbedding as unknown as string,\n    match_count: options.count ?? 8,\n    similarity_threshold: options.threshold ?? 0.5,\n  });\n  if (error) { console.error(\"retrieveNotes error:\", error); return []; }\n  return (data as RetrievedNote[]) || [];\n}\n// same change for retrievePastMessages(queryEmbedding, conversationId, options)"
+      },
+      {
+        "language": "ts",
+        "code": "// route.ts\nconst userEmbedding = await embed(message);\nawait admin.from(\"messages\").insert({ ..., embedding: userEmbedding as unknown as string });\n\nconst [notes, pastMessages] = await Promise.all([\n  retrieveNotes(userEmbedding, { count: 8 }),\n  retrievePastMessages(userEmbedding, conversationId!, { count: 5 }),\n]);"
+      },
+      {
+        "language": "ts",
+        "code": "// src/lib/self-prompt.ts\nlet promptCache: { version: number; body: string; expiresAt: number } | null = null;\nconst PROMPT_TTL_MS = 30_000;\n\nexport async function getActivePrompt() {\n  if (promptCache && promptCache.expiresAt > Date.now()) {\n    return { version: promptCache.version, body: promptCache.body };\n  }\n  // ...existing fetch logic...\n  promptCache = { version, body, expiresAt: Date.now() + PROMPT_TTL_MS };\n  return { version, body };\n}\n\n// bust the cache whenever it changes\nexport async function applyEdit(...) {\n  // ...on success:\n  promptCache = null;\n}\nexport async function revertTo(...) {\n  // ...on success:\n  promptCache = null;\n}"
+      },
+      {
+        "language": "ts",
+        "code": "const { data } = await supabase.from(\"vault_notes\").select(\"*\").not(\"content\", \"is\", null).limit(500);\n// shuffle in JS, slice(0, 20)"
+      },
+      {
+        "language": "sql",
+        "code": "create or replace function sample_vault_notes(sample_count int)\nreturns setof vault_notes as $$\n  select * from vault_notes where content is not null\n  order by random() limit sample_count;\n$$ language sql stable;"
+      },
+      {
+        "language": "ts",
+        "code": "export async function sampleNotes(count = 20): Promise<VaultNote[]> {\n  const supabase = createAdmin();\n  const { data, error } = await supabase.rpc(\"sample_vault_notes\", { sample_count: count });\n  if (error || !data) { console.error(\"sampleNotes error:\", error); return []; }\n  return data as VaultNote[];\n}"
+      },
+      {
+        "language": "tsx",
+        "code": "// Anti-pattern likely present: one state array holding all messages,\n// re-set on every SSE token\nconst [messages, setMessages] = useState<Message[]>([]);\n// on each `delta` event:\nsetMessages(prev => {\n  const updated = [...prev];\n  updated[updated.length - 1].content += token; // mutates + full array re-render\n  return updated;\n});"
+      },
+      {
+        "language": "tsx",
+        "code": "// Keep committed history separate from the in-flight stream buffer\nconst [messages, setMessages] = useState<Message[]>([]);\nconst [streamingText, setStreamingText] = useState(\"\");\n\n// Memoize message list items so old messages never re-render\nconst MessageItem = React.memo(function MessageItem({ msg }: { msg: Message }) {\n  return <div>{msg.content}</div>;\n});\n\n// Only the streaming bubble re-renders on each token\n{messages.map(m => <MessageItem key={m.id} msg={m} />)}\n{streamingText && <div>{streamingText}</div>}"
+      },
+      {
+        "language": "tsx",
+        "code": "const bufferRef = useRef(\"\");\nconst rafRef = useRef<number>();\nfunction onDelta(token: string) {\n  bufferRef.current += token;\n  if (!rafRef.current) {\n    rafRef.current = requestAnimationFrame(() => {\n      setStreamingText(bufferRef.current);\n      rafRef.current = undefined;\n    });\n  }\n}"
+      },
+      {
+        "language": "tsx",
+        "code": "useEffect(() => {\n  const id = requestAnimationFrame(loop);\n  return () => cancelAnimationFrame(id); // don't leak on unmount\n}, []);"
+      },
+      {
+        "language": "ts",
+        "code": "for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {\n  const stream = await streamChat({ ... });\n  for await (const event of stream) { ... controller.enqueue(...) }\n  ...\n}"
+      },
+      {
+        "language": "ts",
+        "code": "const responseStream = new ReadableStream({\n  async start(controller) {\n    const signal = req.signal;\n    try {\n      for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {\n        if (signal.aborted) break;\n        const stream = await streamChat({ ... });\n        for await (const event of stream) {\n          if (signal.aborted) break;\n          if (event.type === \"content_block_delta\" && event.delta.type === \"text_delta\") {\n            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: \"delta\", text: event.delta.text })}\\n\\n`));\n          }\n        }\n        if (signal.aborted) break;\n        // ...\n      }\n    } finally {\n      controller.close();\n    }\n  },\n  cancel() {\n    // ReadableStream calls this on client disconnect — nothing extra needed\n    // as long as we're checking req.signal.aborted in the loop above.\n  },\n});"
+      },
+      {
+        "language": "ts",
+        "code": "import { after } from \"next/server\";\n// ...\nafter(() => extractAndSaveNote({ userMessage: message, assistantMessage: fullText, conversationId }));"
+      }
+    ]
+  },
+  "rawOutputPreview": "# Performance Analysis: Silas Codebase\n\n## 1. N+1 / Redundant Query Patterns\n\n### 🔴 Triple embedding of the same text (biggest win)\nIn `src/app/api/chat/route.ts`, the user message gets embedded **three separate times** via three separate OpenAI API calls:\n\n```ts\nconst userEmbedding = await embed(message);           // embed #1 (for storage)\n...\nconst [notes, pastMessages] = await Promise.all([\n  retrieveNotes(message, { count: 8 }),                // embed #2 (inside retrieveNotes)\n  retrievePastMessages(message, conversationId!, ...),  // embed #3 (inside retrievePastMessages)\n]);\n```\n\nEach embed call is a network round-trip to OpenAI (~100-300ms) — this adds ~200-600ms of pure waste to every chat turn and 3x's your embedding bill.\n\n**Fix:** embed once, pass the vector down.\n\n```ts\n// src/lib/rag.ts\nexport async function retrieveNotes(\n  queryEmbedding: number[],\n  options: { count?: number; threshold?: number } = {}\n): Promise<RetrievedNote[]> {\n  const supabase = createAdmin();\n  const { data, error } = await supabase.rpc(\"match_vault_notes\", {\n    query_embedding: queryEmbedding as unknown as string,\n    match_count: options.count ?? 8,\n    similarity_threshold: options.threshold ?? 0.5,\n  });\n  if (error) { console.error(\"retrieveNotes error:\", error); return []; }\n  return (data as RetrievedNote[]) || [];\n}\n// same change for retrievePastMessages(queryEmbedding, conversationId, options)\n```\n\n```ts\n// route.ts\nconst userEmbedding = await embed(message);\nawait admin.from(\"messages\").insert({ ..., embedding: userEmbedding as unknown as string });\n\nconst [notes, pastMessages] = await Promise.all([\n  retrieveNotes(userEmbedding, { count: 8 }),\n  retrievePastMessages(userEmbedding, conversationId!, { count: 5 }),\n]);\n```\n\n### 🟡 `getActivePrompt()` — 2 sequential DB round trips on every chat message\n`src/lib/self-prompt.ts` fetches `silas_prompt_state` then `silas_prompt_versions` sequentially, on *every single chat request*, even though the active prompt rarely c",
+  "rawOutputLength": 10316
+}
