@@ -98,13 +98,16 @@ export function BrainCanvas() {
 
     const hsl = new THREE.Color();
     for (let i = 0; i < dotCount; i++) {
-      const xOffset = Math.random() > 0.5 ? -0.3 : 0.3; // hemisphere + fissure
+      // Even sphere: uniform direction, cortex-biased radius (denser toward the
+      // outer shell than dead center → volume), plus ~7% radial noise so the
+      // outline reads as a living cloud rather than a perfect ball.
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.acos(2 * Math.random() - 1);
-      const r = Math.pow(Math.random(), 0.5) * 0.8;
-      const x = r * Math.sin(phi) * Math.cos(theta) * 0.5 + xOffset;
-      const y = r * Math.sin(phi) * Math.sin(theta) * 1.2; // taller
-      const z = r * Math.cos(phi) * 0.7; // flatter
+      const noise = 1 + (Math.random() * 2 - 1) * 0.07; // ±7% radial jitter
+      const r = Math.pow(Math.random(), 0.5) * 0.85 * noise;
+      const x = r * Math.sin(phi) * Math.cos(theta);
+      const y = r * Math.sin(phi) * Math.sin(theta);
+      const z = r * Math.cos(phi);
       positions[i * 3] = x;
       positions[i * 3 + 1] = y;
       positions[i * 3 + 2] = z;
