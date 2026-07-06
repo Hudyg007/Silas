@@ -170,198 +170,50 @@ html, body {
 }
 
 /* ============================================ */
-/* Aurora-alive brain background — v4 ported    */
+/* Design-system surface primitives             */
 /* ============================================ */
 
-.aurora-stage {
-  /* --ab-glow is the master glow multiplier; AuroraBrain overrides it from its
-     GLOW tunable. Dial it here (or there) to push firing intensity globally. */
-  --ab-glow: 1;
-  position: fixed;
-  inset: 0;
-  background: linear-gradient(135deg, #02040f 0%, #080820 25%, #150e28 50%, #0a0e22 75%, #02040f 100%);
-  background-size: 200% 200%;
-  animation: aurora-bg 55s ease infinite;
-  z-index: 0;
-  overflow: hidden;
+/* Frosted glass container — 5% white fill, 10% white border, 20px blur.
+   Matches the reference Stitch screens (conversations / settings). */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-@keyframes aurora-bg {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+/* Older thoughts dissolve toward the top of the list — the "evaporation echo". */
+.evaporation-gradient {
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.35) 0%, rgba(0, 0, 0, 1) 22%);
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.35) 0%, rgba(0, 0, 0, 1) 22%);
 }
 
-.aurora-haze {
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(ellipse 80% 60% at 30% 40%, rgba(70, 100, 160, 0.22) 0%, transparent 65%),
-    radial-gradient(ellipse 70% 80% at 70% 55%, rgba(110, 80, 150, 0.18) 0%, transparent 60%);
-  animation: aurora-haze 38s ease-in-out infinite;
-  mix-blend-mode: screen;
+/* Soft "breath" pulse for the live indicator dot. */
+.pulse-soft {
+  animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
 }
 
-@keyframes aurora-haze {
-  0%, 100% { opacity: 0.9; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.08); }
-}
-
-.aurora-halo {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 680px;
-  height: 520px;
-  transform: translate(-50%, -52%);
-  background: radial-gradient(ellipse 50% 60% at 50% 50%, rgba(150, 180, 230, 0.18) 0%, rgba(120, 150, 210, 0.08) 35%, transparent 70%);
-  animation: aurora-halo 9s ease-in-out infinite;
-  pointer-events: none;
-  mix-blend-mode: screen;
-}
-
-@keyframes aurora-halo {
-  0%, 100% { opacity: 0.7; transform: translate(-50%, -52%) scale(1); }
-  50% { opacity: 1; transform: translate(-50%, -52%) scale(1.04); }
-}
-
-.aurora-grain {
-  position: absolute;
-  inset: 0;
-  opacity: 0.03;
-  pointer-events: none;
-  background-image: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.5) 0.5px, transparent 1px);
-  background-size: 3px 3px;
-}
-
-.aurora-particles {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
-.ab-p {
-  position: absolute;
+/* Ice-blue range slider thumb (settings → typing speed). */
+.silas-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
-  background: rgba(200, 220, 255, 0.6);
-  box-shadow: 0 0 3px rgba(180, 210, 255, 0.5);
-  animation: ab-drift linear infinite;
+  background: #4de3ff;
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(77, 227, 255, 0.5);
 }
-.ab-p-back { width: 1px; height: 1px; opacity: 0.4; }
-.ab-p-front { width: 2px; height: 2px; opacity: 0.85; }
-
-@keyframes ab-drift {
-  0% { opacity: 0; transform: translate(0, 0); }
-  15% { opacity: var(--op, 0.7); }
-  85% { opacity: var(--op, 0.7); }
-  100% { opacity: 0; transform: translate(var(--dx), var(--dy)); }
-}
-
-.aurora-brain {
-  position: absolute;
-  top: 48%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  animation: aurora-breathe 6.5s ease-in-out infinite;
-}
-
-@keyframes aurora-breathe {
-  0%, 100% { transform: translate(-50%, -50%) scale(1); }
-  50% { transform: translate(-50%, -50%) scale(1.022); }
-}
-
-.aurora-twitch {
-  animation: aurora-twitch 11s ease-in-out infinite;
-  transform-origin: center;
-}
-
-@keyframes aurora-twitch {
-  0%, 92%, 100% { transform: translate(0, 0) rotate(0); }
-  93% { transform: translate(-0.5px, 0.3px) rotate(0.18deg); }
-  95% { transform: translate(0.4px, -0.4px) rotate(-0.12deg); }
-  97% { transform: translate(0, 0.2px) rotate(0.06deg); }
-}
-
-.ab-node-back {
-  fill: rgba(150, 180, 220, 0.35);
-  transition: fill 0.5s ease, opacity 0.5s ease;
-}
-
-.ab-node {
-  fill: rgba(195, 220, 245, 0.55);
-  transition: fill 0.4s ease, opacity 0.4s ease, filter 0.4s ease;
-}
-
-.ab-node.bright {
-  fill: rgba(250, 253, 255, 1);
-  filter:
-    drop-shadow(0 0 calc(7px * var(--ab-glow, 1)) rgba(190, 222, 255, 0.95))
-    drop-shadow(0 0 calc(15px * var(--ab-glow, 1)) rgba(150, 200, 255, 0.75));
-}
-
-.ab-conn {
-  stroke: rgba(140, 180, 220, 0.08);
-  stroke-width: 0.5;
-  transition: stroke 0.5s ease, stroke-width 0.5s ease, filter 0.5s ease;
-}
-
-.ab-conn.fire {
-  stroke: rgba(225, 240, 255, 1);
-  stroke-width: 2;
-  filter:
-    drop-shadow(0 0 calc(5px * var(--ab-glow, 1)) rgba(190, 220, 255, 1))
-    drop-shadow(0 0 calc(11px * var(--ab-glow, 1)) rgba(150, 200, 255, 0.7));
-}
-
-/* "warm" = a traveling-thought highlight: hotter, brighter, more saturated. */
-.ab-conn.fire-warm {
-  stroke: rgba(255, 215, 165, 1);
-  stroke-width: 2.2;
-  filter:
-    drop-shadow(0 0 calc(6px * var(--ab-glow, 1)) rgba(255, 200, 150, 1))
-    drop-shadow(0 0 calc(13px * var(--ab-glow, 1)) rgba(255, 170, 110, 0.75));
-}
-
-.ab-tendril {
-  stroke: rgba(170, 200, 245, 0.45);
-  stroke-width: 0.7;
-  fill: none;
-  stroke-linecap: round;
-  filter: drop-shadow(0 0 3px rgba(160, 200, 255, 0.5));
-}
-
-.ab-pulse-wave {
-  fill: none;
-  stroke: rgba(180, 210, 255, 0.45);
-  stroke-width: 1;
-  opacity: 0;
-  animation: ab-pulse 9s ease-out forwards;
-  pointer-events: none;
-}
-
-@keyframes ab-pulse {
-  0% { r: 10; opacity: 0.6; stroke-width: 1.6; }
-  100% { r: 280; opacity: 0; stroke-width: 0.2; }
-}
-
-.ab-waveform {
-  stroke: rgba(190, 220, 255, 0.55);
-  stroke-width: 1.2;
-  fill: none;
-  stroke-linecap: round;
-  opacity: 0;
-  animation: ab-wave 4s ease-out forwards;
-  filter: drop-shadow(0 0 4px rgba(180, 210, 255, 0.7));
-  pointer-events: none;
-}
-
-@keyframes ab-wave {
-  0% { opacity: 0; stroke-width: 0.4; }
-  30% { opacity: 0.85; stroke-width: 1.6; }
-  100% { opacity: 0; stroke-width: 0.2; }
-}
-
-.aurora-eye-core {
-  fill: rgba(250, 253, 255, 0.95);
-  filter: drop-shadow(0 0 14px rgba(210, 230, 255, 0.95));
+.silas-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 50%;
+  background: #4de3ff;
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(77, 227, 255, 0.5);
 }

@@ -4,6 +4,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { MessageList } from "./MessageList";
 import { ChatInput } from "./ChatInput";
 import { Header } from "./Header";
+import {
+  cpsFromTypingSpeed,
+  getTypingSpeed,
+  onSettingsChange,
+  setCurrentConversationId,
+  TYPING_SPEED_KEY,
+} from "@/lib/settings";
 
 // After this long with no interaction, older messages evaporate (fade by age).
 const IDLE_MS = 6000;
@@ -46,9 +53,13 @@ type Reveal = {
 // `true` to fully restore the fetch("/api/onboarding") behavior.
 const ONBOARDING_ENABLED = false;
 
-export function ChatInterface() {
+export function ChatInterface({
+  initialConversationId = null,
+}: {
+  initialConversationId?: string | null;
+}) {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(initialConversationId);
   const [sending, setSending] = useState(false);
   const [onboardingMessage, setOnboardingMessage] = useState<string | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(true);
@@ -57,6 +68,45 @@ export function ChatInterface() {
   // The single active reveal (null when nothing is typing). A long-lived
   // interval reads this each tick, so there's only ever one timer to clean up.
   const revealRef = useRef<Reveal | null>(null);
+
+  // Effective typewriter speed (chars/sec), driven by the settings screen.
+  // Defaults to BASE_CPS; the reveal loop reads this live so slider changes
+  // take effect immediately.
+  const cpsRef = useRef<number>(BASE_CPS);
+  useEffect(() => {
+    cpsRef.current = cpsFromTypingSpeed(getTypingSpeed());
+    return onSettingsChange((key) => {
+      if (key === TYPING_SPEED_KEY) cpsRef.current = cpsFromTypingSpeed(getTypingSpeed());
+    });
+  }, []);
+
+  // Re-open an existing conversation when arriving via /?c=<id>.
+  useEffect(() => {
+    if (!initialConversationId) return;
+    setCurrentConversationId(initialConversationId);
+    fetch(`/api/conversations/${encodeURIComponent(initialConversationId)}/messages`)
+      .then((r) => r.json())
+      .then((data) => {
+        const loaded: Message[] = (data.messages ?? []).map(
+          (m: { id: string; role: "user" | "assistant"; content: string }) => ({
+            id: m.id,
+            role: m.role,
+            content: m.content,
+          })
+        );
+        if (loaded.length > 0) {
+          setMessages(loaded);
+          setShowOnboarding(false);
+        }
+      })
+      .catch((err) => console.error("load conversation failed:", err));
+  }, [initialConversationId]);
+
+  // Remember the active conversation so the conversations list can flag it live
+  // and the settings "Clear conversation" action knows which one to target.
+  useEffect(() => {
+    if (conversationId) setCurrentConversationId(conversationId);
+  }, [conversationId]);
 
   // Evaporation: when idle, MessageList fades older messages by age. Any
   // interaction (scroll/touch/keypress) or new message restores full opacity.
@@ -156,9 +206,10 @@ export function ChatInterface() {
       // Adaptive rate: stay calm when keeping up, speed up when far behind so
       // the visible text never lags more than ~CATCHUP_SECONDS behind.
       const catchUp = backlog > MAX_BACKLOG;
+      const baseCps = cpsRef.current || BASE_CPS;
       const rate = catchUp
-        ? Math.max(BASE_CPS, backlog / CATCHUP_SECONDS)
-        : BASE_CPS;
+        ? Math.max(baseCps, backlog / CATCHUP_SECONDS)
+        : baseCps;
 
       st.frac += (rate * TICK_MS) / 1000;
       const budget = Math.floor(st.frac);

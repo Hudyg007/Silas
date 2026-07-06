@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
+import { getBrainIntensity, onSettingsChange, BRAIN_INTENSITY_KEY } from "@/lib/settings";
 
 /**
  * BrainCanvas — a three.js "thought-orb" brain that lives behind the chat.
@@ -64,6 +65,19 @@ export function BrainCanvas() {
     const dotCount = reduce ? Math.round(DOT_COUNT / 2) : DOT_COUNT;
     const speedMul = reduce ? 0.5 : 1;
     const rotMul = reduce ? 0.5 : 1;
+
+    // ---- Brain-intensity preference (settings → "Brain intensity") --------
+    // "lively" is the baseline; "subtle" dims the glow and calms the motion.
+    // liveMul scales orb speed, rotation, and lit-peak brightness; read live so
+    // toggling the setting takes effect immediately.
+    let liveMul = 1;
+    const readIntensity = () => {
+      liveMul = getBrainIntensity() === "subtle" ? 0.6 : 1;
+    };
+    readIntensity();
+    const offSettings = onSettingsChange((key) => {
+      if (key === BRAIN_INTENSITY_KEY) readIntensity();
+    });
 
     // ---- Scene / camera / renderer (alpha, sits behind the chat) ----------
     const scene = new THREE.Scene();
@@ -295,7 +309,8 @@ export function BrainCanvas() {
     // ---- Mood: `thinking` flag, `intensity` its eased 0→1 value -----------
     let thinking = false;
     let intensity = 0;
-    const peakFor = () => GLOW * (0.5 + 0.5 * intensity); // brighter when busy
+    // brighter when busy, dimmed when the "subtle" intensity is selected
+    const peakFor = () => GLOW * (0.5 + 0.5 * intensity) * (0.65 + 0.35 * liveMul);
 
     // ---- Real-thinking event wiring ---------------------------------------
     const onThinking = (e: Event) => {
@@ -328,9 +343,10 @@ export function BrainCanvas() {
       const orbSpeed =
         (ORB_SPEED_IDLE + (ORB_SPEED_THINK - ORB_SPEED_IDLE) * intensity) *
         speedMul *
+        liveMul *
         frames;
       brainGroup.rotation.y +=
-        (ROT_IDLE + (ROT_THINK - ROT_IDLE) * intensity) * rotMul * frames;
+        (ROT_IDLE + (ROT_THINK - ROT_IDLE) * intensity) * rotMul * liveMul * frames;
 
       const peak = peakFor();
 
@@ -434,6 +450,7 @@ export function BrainCanvas() {
       window.removeEventListener("resize", onResize);
       window.removeEventListener("silas:thinking", onThinking as EventListener);
       window.removeEventListener("silas:token", onToken as EventListener);
+      offSettings();
       dotGeom.dispose();
       dotMat.dispose();
       linkGeom.dispose();
