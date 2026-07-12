@@ -1,3 +1,5 @@
+ALWAYS read MEMORY.md first — it is the project's accumulated context and decisions. Append to its SESSION LOG and update CURRENT STATE at the end of every session.
+
 # Ruflo — Claude Code Configuration
 
 ## Rules
