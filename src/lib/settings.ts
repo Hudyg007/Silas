@@ -12,6 +12,7 @@ const KEYS = {
   brainIntensity: "silas:brainIntensity",
   typingSpeed: "silas:typingSpeed",
   currentConversationId: "silas:currentConversationId",
+  speechEnabled: "silas:speechEnabled",
 } as const;
 
 // Defaults chosen to match the pre-settings behaviour: lively brain, and a
@@ -79,6 +80,17 @@ export function setTypingSpeed(seconds: number) {
   broadcast(KEYS.typingSpeed);
 }
 export const TYPING_SPEED_KEY = KEYS.typingSpeed;
+
+// --- Voice output (Silas speaks his replies via ElevenLabs) ----------------
+// Default OFF so nobody's phone starts talking unexpectedly.
+export function getSpeechEnabled(): boolean {
+  return readRaw(KEYS.speechEnabled) === "1";
+}
+export function setSpeechEnabled(enabled: boolean) {
+  writeRaw(KEYS.speechEnabled, enabled ? "1" : "0");
+  broadcast(KEYS.speechEnabled);
+}
+export const SPEECH_ENABLED_KEY = KEYS.speechEnabled;
 
 // --- Current (last-opened) conversation ------------------------------------
 export function getCurrentConversationId(): string | null {

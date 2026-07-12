@@ -7,10 +7,13 @@ import { Header } from "./Header";
 import {
   cpsFromTypingSpeed,
   getTypingSpeed,
+  getSpeechEnabled,
   onSettingsChange,
   setCurrentConversationId,
   TYPING_SPEED_KEY,
+  SPEECH_ENABLED_KEY,
 } from "@/lib/settings";
+import { speak, stopSpeaking, onSpeakingChange } from "@/lib/speech";
 
 // After this long with no interaction, older messages evaporate (fade by age).
 const IDLE_MS = 6000;
@@ -64,6 +67,23 @@ export function ChatInterface({
   const [onboardingMessage, setOnboardingMessage] = useState<string | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Voice output: read the speaker toggle live so "done" knows whether to speak.
+  // `speakingId` drives the stop button on the newest Silas message.
+  const speechEnabledRef = useRef(false);
+  const [speakingId, setSpeakingId] = useState<string | null>(null);
+  useEffect(() => {
+    speechEnabledRef.current = getSpeechEnabled();
+    const offSettings = onSettingsChange((key) => {
+      if (key === SPEECH_ENABLED_KEY) speechEnabledRef.current = getSpeechEnabled();
+    });
+    const offSpeaking = onSpeakingChange(setSpeakingId);
+    return () => {
+      offSettings();
+      offSpeaking();
+      stopSpeaking(); // never leave audio playing after unmount
+    };
+  }, []);
 
   // The single active reveal (null when nothing is typing). A long-lived
   // interval reads this each tick, so there's only ever one timer to clean up.
@@ -257,6 +277,8 @@ export function ChatInterface({
     if (sending || !text.trim()) return;
     setSending(true);
     setShowOnboarding(false);
+    // A new message interrupts any reply still being spoken aloud.
+    stopSpeaking();
 
     const userMsg: Message = { id: `u-${Date.now()}`, role: "user", content: text };
     const assistantMsg: Message = { id: `a-${Date.now()}`, role: "assistant", content: "", pending: true };
@@ -316,6 +338,13 @@ export function ChatInterface({
               window.dispatchEvent(
                 new CustomEvent("silas:thinking", { detail: { active: false } })
               );
+              // Voice output is additive: the typewriter reveal is untouched.
+              // If the speaker is on, speak the full reply now. speak() never
+              // throws — any TTS failure falls back silently to text-only.
+              if (speechEnabledRef.current && revealRef.current?.msgId === myId) {
+                const full = revealRef.current.target;
+                if (full.trim()) void speak(full, myId);
+              }
             } else if (evt.type === "error") {
               if (revealRef.current?.msgId === myId) {
                 revealRef.current.target += `\n\n[error: ${evt.message}]`;
@@ -366,7 +395,12 @@ export function ChatInterface({
               {onboardingMessage}
             </div>
           )}
-          <MessageList messages={messages} idle={idle} />
+          <MessageList
+            messages={messages}
+            idle={idle}
+            speakingId={speakingId}
+            onStopSpeak={stopSpeaking}
+          />
         </div>
       </div>
 

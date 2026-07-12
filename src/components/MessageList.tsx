@@ -14,9 +14,14 @@ const FADE_STEPS = [1, 0.65, 0.4, 0.22, 0.1];
 export function MessageList({
   messages,
   idle,
+  speakingId = null,
+  onStopSpeak,
 }: {
   messages: Message[];
   idle: boolean;
+  // Id of the assistant message whose audio is currently playing (or null).
+  speakingId?: string | null;
+  onStopSpeak?: () => void;
 }) {
   if (messages.length === 0) return null;
   const total = messages.length;
@@ -36,6 +41,8 @@ export function MessageList({
             pending={m.pending}
             opacity={opacity}
             idle={idle}
+            speaking={m.role === "assistant" && m.id === speakingId}
+            onStopSpeak={onStopSpeak}
           />
         );
       })}

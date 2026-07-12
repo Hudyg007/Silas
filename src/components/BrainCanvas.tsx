@@ -326,8 +326,17 @@ export function BrainCanvas() {
       lastToken = now;
       lightDot(orbWalker.cur, 1); // a crisp flash at the orb's dot
     };
+    // While Silas speaks his reply aloud, the mind breathes in a gentle rhythm.
+    // This is purely additive — it never touches the thinking/token behavior.
+    let speaking = false;
+    let speakEnv = 0; // eased 0→1 so the breath fades in/out smoothly
+    let speakClock = 0; // seconds accumulator driving the breath sine
+    const onSpeaking = (e: Event) => {
+      speaking = !!(e as CustomEvent<{ active?: boolean }>).detail?.active;
+    };
     window.addEventListener("silas:thinking", onThinking as EventListener);
     window.addEventListener("silas:token", onToken as EventListener);
+    window.addEventListener("silas:speaking", onSpeaking as EventListener);
 
     // ---- Animation loop (Clock delta; nothing allocated per frame) --------
     const clock = new THREE.Clock();
@@ -366,8 +375,15 @@ export function BrainCanvas() {
         positions[orbWalker.next * 3 + 2]
       );
       orb.position.lerpVectors(tmpA, tmpB, orbWalker.progress);
-      const orbGlow = 0.16 + intensity * 0.12;
+
+      // Speaking breath: ease the envelope, then add a slow ~0.5Hz sine to the
+      // orb halo and a barely-there group scale so the mind gently "talks along".
+      speakEnv += ((speaking ? 1 : 0) - speakEnv) * Math.min(1, 0.04 * frames);
+      speakClock += dt;
+      const breath = (Math.sin(speakClock * Math.PI) * 0.5 + 0.5) * speakEnv;
+      const orbGlow = 0.16 + intensity * 0.12 + breath * 0.06;
       halo.scale.setScalar(orbGlow);
+      brainGroup.scale.setScalar(1 + breath * 0.015);
 
       // Secondary pulse-paths: 2–3 while thinking, a rare faint one when idle.
       const want = intensity > 0.35 ? SECONDARY_PULSES : 0;
@@ -453,6 +469,7 @@ export function BrainCanvas() {
       window.removeEventListener("resize", onResize);
       window.removeEventListener("silas:thinking", onThinking as EventListener);
       window.removeEventListener("silas:token", onToken as EventListener);
+      window.removeEventListener("silas:speaking", onSpeaking as EventListener);
       offSettings();
       dotGeom.dispose();
       dotMat.dispose();
