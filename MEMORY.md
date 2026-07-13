@@ -30,6 +30,13 @@ thoughts (mostly unused so far — future "read the brain" feature).
 LOCKED DESIGN DECISIONS (do not revisit without Hudson)
 
 
+Silas's own thoughts live in vault_notes under path prefix silas/thoughts/
+<theme>/, marked source = "silas-wrote" (existing schema check constraint;
+NOT "silas"), first person, no em/en dashes or " - " clause breaks, real
+titles in his voice. Growing this body of notes is an ongoing goal.
+scripts/develop-mind.ts generates them (checkpointed, Ctrl+C-safe, STOP-file
+stoppable, resumable, upserts on path). Curiosity map + themes + research
+live in scripts/output/ (gitignored).
 One accent: electric ice-blue #4DE3FF family. Icy blue-white dot tones,
 NOT grey. No gold, no purple, no warm tones.
 Green #33E07A exists in EXACTLY ONE place: the header "live" dot.
@@ -134,6 +141,12 @@ Planned/discussed, not built: /mind page (read Silas's journal + browse
 vault as text), voice feature (prompt written; unclear if run/pushed),
 vault re-sync habit, self-editing system prompt (prompt written, unclear
 if run), Playwright MCP + Vercel MCP setup.
+Silas inner life: scripts/develop-mind.ts + curiosity map (20 themes, 250
+notes planned) + per-theme research are READY, but BLOCKED on credentials:
+local .env.local lacks NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
+ANTHROPIC_API_KEY, OPENAI_API_KEY (Vercel copies are write-only, pull
+returns blanks). Add keys, then: pnpm tsx scripts/develop-mind.ts
+(defaults to a 20-note test batch; review, then rerun for the rest).
 
 
 SESSION LOG (append one line per session)
@@ -144,3 +157,9 @@ Typewriter effect. Stitch design created + committed to /design. Sessions
 A/B/C: restyle, three.js orb brain, conversations+settings. Sphere reshape.
 2026-07-12: Vault migrated via Dispatch (verify!). Voice prompt +
 silas-reviewer agent written. Push/branch audit pending. MEMORY.md created.
+2026-07-12 (develop-mind session): Read the whole Brain, built Silas's
+curiosity map (20 themes) + web research per theme + scripts/develop-mind.ts
+(generate 250 first-person thought notes into vault_notes as silas-wrote,
+interruptible/resumable). Locked: silas/thoughts/ path prefix, first-person
+no-dash voice, growing his inner life is ongoing. Not run yet: waiting on
+API keys in .env.local + Hudson's go-ahead after the 20-note sample.

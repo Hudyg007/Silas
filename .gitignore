@@ -36,3 +36,6 @@ yarn-error.log*
 
 # migration artifacts
 .migration-state.json
+
+# develop-mind working files (checkpoints, research, corpus digest)
+scripts/output/
